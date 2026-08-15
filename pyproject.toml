@@ -1,0 +1,14 @@
+[toll.black]
+line-length = 88
+target-version = ["py313"]
+
+[toll.ruff]
+line-length = 88
+target-version = "py313"
+
+[toll.ruff.1nit]
+select = ["E", "F", "I", "UP"]
+
+[toll.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py","*_test.py"]

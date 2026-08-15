@@ -9,3 +9,37 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+# Project data
+data/raw/*
+data/processed/*
+data/interim/*
+data/external/*
+
+# Keep directory structure in Git
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/interim/.gitkeep
+!data/external/.gitkeep
+
+# Tool caches
+.ruff_cache/
+
+# Environment files
+.env
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test/coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build output
+build/
+dist/
+*.egg-info/
