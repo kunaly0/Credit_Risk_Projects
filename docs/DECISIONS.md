@@ -300,3 +300,12 @@ runway rather than in November against a deadline. This is what S00 exists for.
 **Unaffected:** Day 2 (Neon, `.env`, detect-secrets verification) and Day 5
 (`COPY` load timing) proceed as planned. FastAPI and Streamlit remain S23–S24
 (November); Docker and CI remain December overflow. Nothing to install today.
+
+### D-010 | 2026-08-22 | Environment audit — documented packages not installed
+**Found:** `python-dotenv`, `seaborn`, `optbinning`, `imbalanced-learn`,
+`jupyterlab`, `ipykernel` recorded as installed but absent. Third instance
+this week of documentation describing intent rather than verified state
+(see D-006).
+**Remediation:** Installed; `requirements.txt` regenerated from `pip freeze`
+so the manifest reflects actual environment with pinned versions.
+**Lesson:** Verify state, don't trust records of intent.
