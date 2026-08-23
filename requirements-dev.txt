@@ -1,0 +1,7 @@
+pytest
+black
+ruff
+jupyterlab
+ipykernel
+pre-commit
+detect-secrets
