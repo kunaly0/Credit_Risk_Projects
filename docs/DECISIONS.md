@@ -453,3 +453,33 @@ throttling.
 load incrementally, per file, with a load audit table recording rows and
 elapsed time per run, so degradation is visible rather than silent.
 **Open item for S03: diagnose before the production load.**
+
+### D-017 | 2026-08-23 | Measured: COPY throughput — and a benchmarking error
+
+**Pass 1:** 10,000,000 rows in 45.6s = 219,255 rows/sec. **This figure is
+invalid.** 1.19 GB fits within Windows' RAM write cache (15.7 GB total), so
+the measurement captured memory speed, not disk.
+
+**Pass 2 (27.1M rows, ~3.2 GB):** collapsed to ~1 MB/sec (~8,000 rows/sec)
+once writes exceeded cache. Aborted.
+
+**Root cause — hardware, confirmed via Task Manager:**
+- Disk 0 (`D:` `E:` `G:`) = **ST1000LM035, 5400 RPM HDD**, 932 GB
+- Disk 1 (`C:`) = **Samsung PM991a NVMe SSD**, 239 GB
+- Both idle at 0% with no load — no background contention.
+
+Source files and the `credit_risk_ts` tablespace are **both on the HDD**, so
+the load was reading and writing the same mechanical platter concurrently.
+
+**Methodological lesson:** a benchmark small enough to fit in RAM measures
+RAM. Sustained throughput must be measured beyond cache size. The pass-1
+number should have been challenged as implausible rather than recorded.
+
+**Reopens D-015 tablespace decision.** Capacity favours `D:` (227 GB vs
+127.5 GB); performance strongly favours `C:` (NVMe, and no read/write
+contention with source files). **Decide in S02**, jointly with the
+performance-window filtering decision — filtering may reduce the footprint
+enough to fit on `C:` and remove the trade-off entirely.
+
+**Viability unchanged:** 63 GB → ~72 GB in Postgres is achievable on either
+drive. This is a time-budget question, not a capacity question.
