@@ -49,10 +49,18 @@ run the finished pipeline against the standard files for final validation.
 **Rationale:** S11 (WoE binning) will run hundreds of iterations. Iteration
 speed is the binding constraint during development, not data volume.
 
-**OPEN ITEM — must close in S01:** The sampling methodology is not yet
-verified. Unknown whether the sample is a simple random draw per vintage,
-what the sampling rate is, and whether the default rate is preserved.
-A sample whose selection mechanism cannot be described cannot be defended.
+**OPEN ITEM — CLOSED 2026-08-23:** Sampling methodology confirmed from
+Freddie Mac General User Guide (Jan 2026). The sample dataset is a **simple
+random sample of 50,000 loans from each full vintage year**, with a
+proportionate number from each partial vintage year, containing the same
+loan-level fields as the full Dataset.
+
+Critically, this samples **loans, not rows** — each sampled loan retains its
+complete monthly performance history. No truncation of performance windows.
+
+Scale: 50,000 × 6 vintages ≈ 300,000 loans, versus ~4-5 million in the
+standard files (~15× reduction) with a documented, defensible selection
+mechanism.
 
 **Revisit if:** Sample proves non-representative on default rate or key
 covariate distributions.
@@ -420,3 +428,28 @@ A 24-month PD performance window needs a fraction of that. Filtering during
 load rather than after may reduce volume substantially. Weighed against
 Project 4 (lifetime PD) and Project 1 (roll-rate/migration) needing longer
 histories. **Decide deliberately in S02, not by default.**
+
+### D-016 | 2026-08-23 | OPEN: performance file layout does not reconcile
+**Guide (Jan 2026):** 32 columns. **File (Aug 2026 download):** 34 fields +
+trailing delimiter, consistent across 2,000 sampled lines.
+**Likely cause:** guide predates the release; document states it is updated
+as the dataset is modified.
+**To close in S01:** check `file_layout.xlsx` (linked in guide footnote 6)
+and SFLLD Release Notes.
+**BLOCKS S02 DDL.** Does not block Day 5 throughput measurement — staging
+table is untyped TEXT and does not encode column meaning.
+
+### D-017 | 2026-08-23 | Measured: local COPY throughput, and its instability
+**Pass 1:** 10,000,000 rows in 45.6s = **219,255 rows/sec**, 1.19 GB on disk
+(1.15× source text). Local Postgres is **164× faster than Neon** (1,335/sec),
+confirming the two-database architecture.
+**Pass 2 (full 27.1M file):** throughput collapsed to ~1 MB/sec (~8,000
+rows/sec), a 27× degradation. Aborted.
+**Cause: NOT DIAGNOSED.** Candidates: disk contention with prior staging
+table, checkpoint pressure, antivirus scanning the data directory, thermal
+throttling.
+**Implication:** Scope is viable — 63 GB → ~72 GB in Postgres, well within
+227 GB free. But ETL time cannot be budgeted from the pass-1 rate. S03 must
+load incrementally, per file, with a load audit table recording rows and
+elapsed time per run, so degradation is visible rather than silent.
+**Open item for S03: diagnose before the production load.**
