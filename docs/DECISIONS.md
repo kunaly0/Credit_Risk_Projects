@@ -309,3 +309,13 @@ this week of documentation describing intent rather than verified state
 **Remediation:** Installed; `requirements.txt` regenerated from `pip freeze`
 so the manifest reflects actual environment with pinned versions.
 **Lesson:** Verify state, don't trust records of intent.
+
+### D-011 | 2026-08-23 | Measured: Neon write throughput ~1,335 rows/sec
+**Measurement:** 10,000-row COPY to Neon completed in 7.49s. Includes
+probable cold-start (free-tier auto-suspend). Local Postgres expected
+50–200k rows/sec.
+**Implication:** Bulk loading Freddie Mac to Neon is not viable — tens of
+millions of rows would take hours. Confirms the two-database architecture:
+local Postgres as development warehouse, Neon as serving layer holding only
+scored outputs, monitoring tables and dashboard aggregates.
+**Revisit if:** Serving-layer tables exceed ~500k rows.
