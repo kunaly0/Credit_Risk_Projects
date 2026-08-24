@@ -2,7 +2,7 @@
 
 **Dataset:** Single-Family Loan-Level Dataset (SFLLD), Standard Dataset, Release 47 layout (effective July 2026)
 **File naming:** `perf_YYYYQn.txt`, pipe-delimited, no header row, empty-string nulls
-**Status:** Positions 1–34 verified against 2 raw records from `perf_2005Q1.txt` (2026-08-24), cross-checked against Freddie Mac's Release 47 Release Notes and Disclosure Changes summary. Position 35 (Bankruptcy Cramdown Costs) is documented but not yet observed live in a sampled row — it's a rare event.
+**Status:** Positions 1–34 verified against 2 raw records from `perf_2005Q1.txt` (2026-08-24), cross-checked against Freddie Mac's Release 47 Release Notes and Disclosure Changes summary. Position 35 (Bankruptcy Cramdown Costs) wasn't populated in that 2-row spot check, but the missingness census (below) confirms it's genuinely live in the data (~0.8% of rows) — just rare, not absent.
 **Sources:** Freddie Mac SFLLD General User Guide (Jan 2026, project knowledge); `release_notes.pdf` and `disclosure-changes-summary.pdf`, freddiemac.com/fmac-resources/research/pdf/, fetched 2026-08-24.
 **Related decision:** D-016 (closed 2026-08-24)
 
@@ -52,7 +52,40 @@
 | 34 | Servicer Name | Alphanumeric | **TBD** | Servicer name, or `OTHER` | Current servicer; `OTHER` if under 1% of the quarter's total UPB. | Moved in from Origination file, Release 47. Length not confirmed from documentation reviewed — verify empirically or via `file_layout.xlsx`. |
 | 35 | Bankruptcy Cramdown Costs | Numeric (decimal), inferred | **TBD** | $ amount | Bankruptcy cramdown costs, incl. court-ordered UPB reduction. | New field, Release 47. Not observed live in samples — type/length inferred from sibling $ fields, not confirmed. |
 
+## Missingness census
+
+Computed on the full Sample Dataset (all 6 vintages, ~20.16M rows, D-002-confirmed 50,000 loans/vintage), not Standard — a genuine random sample of loans, so field-level missingness should mirror the ~602M-row Standard population. Per-vintage breakdown lives in `Scratch/missingness_census.csv` (2026-08-24 run); this table is the overall figure.
+
+| Field | % Null (overall) | Read as |
+|---|---|---|
+| 1–6, 11–13*, 25–26, 32–34 (loan_id, period, current_actual_upb, delinquency_status, loan_age, remaining_months, current_interest_rate, current_non_interest_bearing_upb, eltv raw, current_interest_bearing_upb, mi_cancellation_indicator, servicer_name) | 0.0% | Always populated — core fields, no conditional logic |
+| 7 Defect Settlement Date | 100.0% (exact count pending) | Extremely rare event; verify true zero vs. sub-0.05% |
+| 8 Modification Flag / 24 Interest Rate Step Indicator | 92.0–99.6% by vintage, 96.3% overall | Move together exactly — same trigger, confirms correct joint population |
+| 9/10/27 Zero Balance Code / Effective Date / Removal UPB | 98.0–99.1% by vintage, 98.6% overall | Move together exactly — termination-event fields |
+| 13 DDLPI | 99.6% overall | Populated at disposition — narrower trigger than Zero Balance Code |
+| 14–22, 28 Loss/recovery fields (MI Recoveries, Net Sales Proceeds, Non-MI Recoveries, Expenses, Legal/Maintenance/Tax/Misc costs, Actual Loss, Delinquent Accrued Interest) | 99.9–100.0% overall | Correctly *more* missing than Zero Balance Code — only fires for codes 02/03/09/15, a subset |
+| 23 Cumulative Modification Costs / 31 Current Period Modification Costs | 95.8–99.9% overall | Tracks the modification fields, not identical (cumulative vs. this-period-only) |
+| 25 Payment Deferral Flag | 99.4% overall | |
+| 29 Delinquency Due to Disaster | 99.7% overall | |
+| 30 Borrower Assistance Plan | 99.6% overall | |
+| 35 Bankruptcy Cramdown Costs | 99.2% overall (~0.8% populated) | Genuinely rare, not absent — see cross-vintage note below |
+
+**26 ELTV, raw vs. sentinel-adjusted:** raw `.isnull()` shows 0.0% missing everywhere — misleading, since Release 47 uses `999` as the "not available" sentinel instead of a blank. Adjusted (`999` treated as missing):
+
+| Vintage | % effectively unavailable |
+|---|---|
+| 2005 | 94.6% |
+| 2006 | 94.2% |
+| 2007 | 92.9% |
+| 2008 | 92.0% |
+| 2012 | 58.9% |
+| 2017 | 13.0% |
+
+Clean monotonic gradient — ELTV only populates from April 2017 onward, so this tracks exactly how much of each vintage's performance history falls after that date. Strongest available confirmation that the field's population rule is understood correctly, not assumed.
+
+**Worth another look during EDA, not urgent:** `bankruptcy_cramdown_costs` is populated *more* in 2012/2017 (1.3–2.7%) than in the 2005–2008 crisis vintages (0.2–0.3%) — counter to naive expectation that crisis-era loans would show more bankruptcy activity. Possibly a reporting-practice or legal-provision timing effect; not investigated further here.
+
 ## Open items
 
 - **Position 34 & 35 Type/Length** — not confirmed from documentation reviewed. Close by either finding a raw row with a real value at position 35, or pulling `file_layout.xlsx` from Freddie Mac's site.
-- **Origination Data File dictionary** — not started. Release 47 also changed this file (32 → 31 fields: MI Cancellation Indicator and Servicer Name moved out, VantageScore 4.0 added). Needs the same raw-sample verification before any of it is trusted.
+- **Defect Settlement Date exact count** — confirm true zero vs. sub-0.05% before treating this field as structurally inert in the sample dataset.
