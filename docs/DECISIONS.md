@@ -429,7 +429,7 @@ load rather than after may reduce volume substantially. Weighed against
 Project 4 (lifetime PD) and Project 1 (roll-rate/migration) needing longer
 histories. **Decide deliberately in S02, not by default.**
 
-### D-016 | 2026-08-23 | OPEN: performance file layout does not reconcile
+### D-016 | 2026-08-23 | CLOSED 2026-08-24: performance file layout does not reconcile
 **Guide (Jan 2026):** 32 columns. **File (Aug 2026 download):** 34 fields +
 trailing delimiter, consistent across 2,000 sampled lines.
 **Likely cause:** guide predates the release; document states it is updated
@@ -439,20 +439,31 @@ and SFLLD Release Notes.
 **BLOCKS S02 DDL.** Does not block Day 5 throughput measurement — staging
 table is untyped TEXT and does not encode column meaning.
 
-### D-017 | 2026-08-23 | Measured: local COPY throughput, and its instability
-**Pass 1:** 10,000,000 rows in 45.6s = **219,255 rows/sec**, 1.19 GB on disk
-(1.15× source text). Local Postgres is **164× faster than Neon** (1,335/sec),
-confirming the two-database architecture.
-**Pass 2 (full 27.1M file):** throughput collapsed to ~1 MB/sec (~8,000
-rows/sec), a 27× degradation. Aborted.
-**Cause: NOT DIAGNOSED.** Candidates: disk contention with prior staging
-table, checkpoint pressure, antivirus scanning the data directory, thermal
-throttling.
-**Implication:** Scope is viable — 63 GB → ~72 GB in Postgres, well within
-227 GB free. But ETL time cannot be budgeted from the pass-1 rate. S03 must
-load incrementally, per file, with a load audit table recording rows and
-elapsed time per run, so degradation is visible rather than silent.
-**Open item for S03: diagnose before the production load.**
+**Resolution:** Root cause is Freddie Mac Release 47 (effective July 2026,
+one month before download), which added 3 fields to the Monthly
+Performance Data File: MI Cancellation Indicator (33) and Servicer Name
+(34), both moved in from the Origination file, plus a genuinely new field,
+Bankruptcy Cramdown Costs (35). The Jan 2026 guide in project knowledge
+predates Release 47 and documents the pre-Release-47 32-field layout.
+`perf_YYYYQn.txt` naming on the downloaded files confirms they are already
+on the Release 47 layout.
+
+Original "34 fields + trailing delimiter" framing was a misread. Verified
+against `perf_2005Q1.txt` (2 raw rows, incl. a Zero Balance Code 01
+termination): all 35 positions map correctly to documented fields with
+semantically consistent values (servicer name, interest rate, ELTV all
+check out). Position 35 was empty in both sampled rows — bankruptcy
+cramdowns are rare — which reads identically to a trailing delimiter
+unless the field is already known to exist from documentation.
+
+Also surfaced, folded into the S01 data dictionary: sign convention flip
+on all loss/recovery fields (recoveries/gains now negative, expenses/
+losses now positive — reverse of pre-Release-47), and Current Loan
+Delinquency Status now a zero-padded 2-digit string capped at 99 ("XX" =
+not available), not a plain int.
+
+Sources: docs/provenance/release_notes.pdf, docs/provenance/
+disclosure-changes-summary.pdf (freddiemac.com/fmac-resources/research/pdf/).
 
 ### D-017 | 2026-08-23 | Measured: COPY throughput — and a benchmarking error
 
