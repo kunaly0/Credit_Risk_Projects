@@ -494,3 +494,10 @@ enough to fit on `C:` and remove the trade-off entirely.
 
 **Viability unchanged:** 63 GB → ~72 GB in Postgres is achievable on either
 drive. This is a time-budget question, not a capacity question.
+
+D-020 | 2026-08-24 | Vintage assignment: use file, not date field
+Sample origination First Payment Date extends years past nominal vintage
+(e.g. 2005-vintage loans showing 2011 dates) — confirmed as expected: this
+field is overwritten to the modification's first payment date for modified
+loans, not the original. Vintage must be determined by source file/quarter
+(sample_YYYY, orig_YYYYQn.txt), never by filtering on this field.
