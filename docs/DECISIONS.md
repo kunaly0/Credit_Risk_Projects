@@ -502,3 +502,192 @@ Sample origination First Payment Date extends years past nominal vintage
 field is overwritten to the modification's first payment date for modified
 loans, not the original. Vintage must be determined by source file/quarter
 (sample_YYYY, orig_YYYYQn.txt), never by filtering on this field.
+
+### D-021 | 2026-08-30 | INCIDENT: UTF-8 BOM silently dropped one partition
+
+**What happened:** `sql/03_create_partitions.sql` was written with
+`Out-File -Encoding utf8`, which prepends a UTF-8 BOM (`EF BB BF`). The BOM sat
+in front of the file's first `--`, so line 1 became invalid SQL. psql read
+forward to the first semicolon — at the end of the 2005Q1 statement — and
+rejected the header block and that first CREATE TABLE together. 23 partitions
+created instead of 24; 2005Q1 absent.
+
+**How it was found:** the partition list in `\d+` began at 2005Q2.
+`Format-Hex` then confirmed the leading `EF BB BF`. psql had printed the
+syntax error on first run; it scrolled past among 24 success lines and went
+unread.
+
+**Relationship to D-006:** D-006 recorded that PowerShell's `>` writes UTF-16.
+Too narrow. This used `Out-File` and a BOM — different cmdlet, different
+artefact, not covered. General rule: any tool writing a file for psql can
+introduce an encoding surprise; verify from bytes before running.
+
+**Control changes:**
+1. Verify tooling-written `.sql` files with
+   `Format-Hex <file> | Select-Object -First 1` before execution.
+2. Verify object counts by query, not by reading a list:
+   `SELECT count(*) FROM pg_inherits WHERE inhparent = '<table>'::regclass;`
+
+**Why this matters more than it looks:** nothing about the database appeared
+wrong. The schema was valid and every query would have worked. 2005Q1 rows
+would have failed at load in S03, weeks later, with no obvious link to this
+cause.
+
+### D-022 | 2026-08-30 | Storage placement: fact partitions on credit_risk_ts (D:)
+**CLOSES D-015 and D-017**
+
+**Decision:** All 24 `fact_loan_performance` partitions created with an
+explicit `TABLESPACE credit_risk_ts` clause, on D: (5400 RPM HDD, 227 GB free).
+The three dimension tables remain on `pg_default`, which sits on C: (NVMe SSD,
+127.5 GB free). The database is therefore already split — dimensions on fast
+storage, the large fact table on capacious storage.
+
+**Alternatives considered:**
+- *All partitions on C: (`pg_default`)* — NVMe, materially faster. Sample data
+  is ~3 GB and fits trivially. Standard is ~100 GB against 127.5 GB free,
+  which leaves no headroom for the temporary sort space an index build needs.
+- *Split now — some partitions on each drive* — possible, since PostgreSQL
+  assigns tablespaces per partition. Rejected as premature: there is no data
+  loaded yet, so there is no evidence about which partitions are hot.
+
+**Why D: won:** measurement consistency, not capacity. Sample and standard
+data both live on D:. Putting the sample load on C: would mean every
+throughput figure measured during development said nothing about the standard
+load that follows. Same storage, comparable numbers.
+
+**Cost accepted:** speed. D-017 measured the HDD collapsing to ~8,000 rows/sec
+once writes exceeded the RAM cache. The S03 load will be slower than it would
+be on the NVMe, and this was chosen deliberately.
+
+**Revisit if:** the S03 sample load throughput on D: proves unworkable. The
+remedy is `ALTER TABLE <partition> SET TABLESPACE pg_default` on the
+partitions that need speed — the choice is reversible per partition, which is
+why deciding now costs little.
+
+### D-023 | 2026-08-30 | Fact table partitioned by vintage, 24 quarterly partitions
+
+**Decision:** `fact_loan_performance` is `PARTITION BY LIST (vintage_code)`,
+with 24 partitions — one per quarter across the six D-001 vintages.
+
+**Alternatives considered:**
+- *Partition by `monthly_reporting_period`* — would make cross-sectional
+  queries ("what happened in March 2008") fast, but scatters each loan's
+  performance history across every month it was alive. A 2005 loan would span
+  ~15 yearly chunks.
+- *6 partitions, one per vintage year* instead of 24 quarterly ones — fewer
+  objects to manage, but a coarser unit of reload.
+
+**Why vintage won:** the workload is loan-level and longitudinal. Default
+definition (S08), roll rates and migration (S16), and lifetime PD (Project 4)
+all follow individual loans through time. A loan belongs to exactly one
+vintage, so partitioning on vintage keeps its entire monthly history inside a
+single partition. It also aligns partition boundaries with the vintage-based
+out-of-time train/test split planned for S09.
+
+**Why 24 rather than 6:** the partition then maps 1:1 onto a source file. A
+bad load is fixed by dropping one partition and reloading one file, rather
+than reloading four files to correct one quarter. Reconciliation in S03 also
+becomes a straight per-file comparison. Query performance was not the deciding
+factor — 24 vs 6 is negligible at this scale — operational recoverability was.
+
+**Cost accepted:** any query slicing by calendar time rather than by vintage
+must open all 24 partitions. Partition pruning only works on the partition
+key. This was mitigated with an index on `monthly_reporting_period` (see
+`sql/04_create_indexes.sql`), whose value is assumed rather than measured.
+
+**Revisit if:** the analysis mix shifts toward cross-sectional, calendar-time
+work rather than loan-level longitudinal analysis. Portfolio-level
+time-series reporting in Project 11 is the most likely source of that
+pressure.
+
+### D-024 | 2026-08-30 | Star schema: three dimensions, one partitioned fact table
+
+**Decision:** Four tables.
+
+| Table | Grain | Rows (sample / standard) |
+|---|---|---|
+| `dim_loan` | one loan | 300,000 / 8,689,458 |
+| `dim_vintage` | one origination quarter | 24 |
+| `dim_macro` | one calendar month | ~330 |
+| `fact_loan_performance` | one loan, one month | 19,860,018 / 601,762,231 |
+
+Joined on `loan_sequence_number` (present in both source files) and
+`vintage_code` (assigned by the loader from the filename, per D-020).
+
+**Alternatives considered:**
+- *`dim_state` for property location* — rejected. A state code carries no
+  attributes beyond the two letters in this dataset. The test applied was
+  whether the thing has facts of its own: vintage passed (year, quarter,
+  economic regime), state did not. Stored as `CHAR(2)` on `dim_loan` instead.
+  Revisit if state-level macro data is introduced.
+- *`vintage` as a plain text column on `dim_loan`* — rejected once it was
+  clear vintage carries `economic_regime`, which is a property of the vintage
+  rather than of any loan. Repeating "Crisis" across 8.7M rows would also
+  invite inconsistency.
+- *`dim_macro` in long format* (one row per series per month) — rejected. The
+  series list is fixed at four and every query wants them side by side, so
+  wide format avoids a repeated pivot. Long would win if the series list were
+  open-ended.
+
+**Why this shape:** the two Freddie Mac files already have this structure —
+origination is one row per loan and never changes after write; performance is
+one row per loan-month and grows monthly. The schema follows the data rather
+than imposing on it.
+
+**Cost accepted:** PostgreSQL requires a partitioned table's primary key to
+include the partition column, so the fact table's key is
+`(vintage_code, loan_sequence_number, monthly_reporting_period)` rather than
+the intended `(loan_sequence_number, monthly_reporting_period)`. The key
+therefore does not, by itself, prevent the same loan-month appearing under two
+vintages. This is acceptable because D-020 establishes that a loan's vintage
+comes from its source file and each loan appears in exactly one file — the
+loan ID itself encodes the vintage. A table-level CHECK enforces that the
+`vintage_code` column matches the vintage embedded in `loan_sequence_number`,
+which closes the gap.
+
+**Documentation authority note:** the January 2026 General User Guide in
+project knowledge predates Release 47 and is wrong on any field it changed.
+Two errors were caught during S02 by checking against the S01 data
+dictionaries and `disclosurechangessummary.pdf`: VantageScore 4.0 (position
+31, new in Release 47) and Postal Code length (shortened from 5 to 3
+characters). Reinforces D-016 — the disclosure changes summary is the
+authority, not the User Guide.
+
+**Revisit if:** state-level macro data is added (would create `dim_state`), or
+the FRED series list becomes open-ended (would favour long-format
+`dim_macro`).
+
+### D-025 | 2026-08-30 | Corrected volumes in D-002
+**SUPERSEDES the volume figures in D-002. The decision itself stands.**
+
+**What was wrong:** D-002 estimated the standard files at ~4-5 million loans
+and the sample as a ~15× reduction. Both figures were extrapolated from
+compressed archive size (~300 MB sample vs ~8.2 GB standard).
+
+**Measured in S01** by streaming byte counts, no pandas:
+
+| | Loans | Performance rows |
+|---|---|---|
+| Standard | 8,689,458 | 601,762,231 |
+| Sample | 300,000 | 19,860,018 |
+
+Actual ratio: **~29×**, not ~15×.
+
+**Root cause of the error:** compressed size is not a reliable proxy for row
+count. Compression ratio varies with content, and pipe-delimited text with
+many repeated and empty fields compresses far better than assumed. D-015
+later measured the same 8.2 GB of archives expanding to 62.78 GB on disk —
+a 7.7× expansion.
+
+**Effect on the decision:** none, except to strengthen it. D-002 chose
+development on the sample because iteration speed is the binding constraint
+during S11's WoE binning work. A standard dataset twice the assumed size makes
+that argument stronger, not weaker.
+
+**Confirmed correct in D-002:** the sampling rule. 50,000 loans per full
+vintage year, sampling *loans* rather than rows, so each sampled loan retains
+its complete monthly performance history. No performance-window truncation.
+
+**Lesson:** measure uncompressed size and row counts before making
+load-scope decisions. An estimate from archive size can be wrong by a factor
+of two in either direction.
