@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS fact_loan_performance;
 DROP TABLE IF EXISTS dim_loan;
 DROP TABLE IF EXISTS dim_macro;
 DROP TABLE IF EXISTS dim_vintage;
