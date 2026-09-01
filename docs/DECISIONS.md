@@ -691,3 +691,54 @@ its complete monthly performance history. No performance-window truncation.
 **Lesson:** measure uncompressed size and row counts before making
 load-scope decisions. An estimate from archive size can be wrong by a factor
 of two in either direction.
+
+### D-026 | 2026-09-01 | Dates parsed in Python, not cast by PostgreSQL
+
+**Context.** Source dates are `YYYYMM`. Columns are `DATE` with `CHECK (day = 1)`.
+
+**Finding.** With `DateStyle = ISO, DMY`, PostgreSQL parses six digits as
+`YY|MM|DD`. `'200501'` → `2020-05-01` — wrong by fifteen years, day = 1, and
+the CHECK **accepts** it. `'200503'` → `2020-05-03`, rejected. `'201712'` →
+error, month 17. Most months fail loudly; January passes silently.
+
+**Decision.** The loader converts `YYYYMM` to a Python `date` at first-of-month
+before COPY. Six fields: origination 2, 4; performance 2, 7, 10, 13.
+
+**Rejected.** Setting `DateStyle = ISO, YMD` on the session — makes correctness
+depend on a setting any future connection could omit, and the failure returns
+silently.
+
+**Cost.** Date parsing becomes loader logic requiring unit tests. The CHECK
+constraints are demoted from mechanism to backstop.
+
+### D-027 | 2026-09-01 | Sign constraints: removed from flows, retained on balances
+
+**Context.** S02 constrained fifteen money fields by sign, inferred from
+`docs/data_dictionary_performance.md` without checking data.
+
+**Finding.** One REO row showed `delinquent_accrued_interest` positive against
+a `<= 0` constraint. A full scan of `sample_perf_2005.txt` (3,877,176 rows)
+then showed eight of the fifteen carry values against convention — the single
+field was not the exception, it was the first one looked at. Evidence:
+`docs/profiling/sign_scan_perf_2005.md`.
+
+**Decision.**
+- **Balances keep `CHECK (>= 0)`** — a position at a point in time cannot be
+  negative: `current_actual_upb`, `current_non_interest_bearing_upb`,
+  `current_interest_bearing_upb`, `zero_balance_removal_upb`.
+- **Flows carry no sign constraint**, whether or not they failed here —
+  reversals, clawbacks and escrow refunds are legitimate servicing activity.
+  The remaining eleven money fields.
+
+**Why structural, not "drop the eight that failed."** `mi_recoveries` passed
+and `non_mi_recoveries` failed. Same quantity, same reversal mechanics —
+`mi_recoveries` passed by luck, not by law. Keeping it would record an
+accident rather than a rule, and defer the failure to row 400 million of the
+standard load.
+
+**Cost.** Sign constraints incidentally caught column misalignment; that is
+lost. Replaced by an against-convention rate per field in the load audit — a
+percentage rather than a gate, reviewed after load rather than enforced
+during it.
+
+**Principle.** Block the impossible, never the merely unusual (S02).
