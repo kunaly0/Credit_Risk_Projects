@@ -1,0 +1,132 @@
+# load_config.yaml — ETL configuration for Freddie Mac loads (S03).
+#
+# Grain: one entry per dataset, one block per file type.
+# Source: Freddie Mac Release 47. Field order is FILE order, named with the
+#   target database column. Order here must match the file byte-for-byte.
+# Requires: dim_vintage seeded (sql/05). Load order dim_loan -> fact.
+# Gotcha: all values read as text and converted explicitly in Python.
+#   No dtype inference. Dates are YYYYMM and must be parsed (D-026).
+
+defaults:
+  encoding: cp1252
+  delimiter: "|"
+
+datasets:
+  sample:
+    root: "D:/Datasets/Working/Freddie_mac_sample"
+    pattern: "sample_{year}/sample_{kind}_{year}.txt"
+    vintage_from: loan_id
+    years: [2005, 2006, 2007, 2008, 2012, 2017]
+
+  standard:
+    root: "D:/Datasets/Working/Freddie_mac"
+    pattern: "historical_data_{year}/historical_data_{year}Q{q}/{kind}_{year}Q{q}.txt"
+    vintage_from: filename
+    years: [2005, 2006, 2007, 2008, 2012, 2017]
+
+file_types:
+  origination:
+    target_table: dim_loan
+    field_count: 31
+    source_columns:
+      - credit_score
+      - first_payment_date
+      - first_time_homebuyer
+      - maturity_date
+      - msa
+      - mi_percentage
+      - number_of_units
+      - occupancy_status
+      - original_cltv
+      - original_dti_ratio
+      - original_upb
+      - original_ltv
+      - original_interest_rate
+      - channel
+      - prepayment_penalty_indicator
+      - amortization_type
+      - property_state
+      - property_type
+      - postal_code
+      - loan_sequence_number
+      - loan_purpose
+      - loan_term
+      - number_of_borrowers
+      - seller_name
+      - super_conforming_flag
+      - pre_harp_loan_sequence_number
+      - special_eligibility_program
+      - harp_indicator
+      - property_valuation_method
+      - interest_only_indicator
+      - vantagescore
+    date_fields:
+      - first_payment_date
+      - maturity_date
+    boolean_fields:
+      first_time_homebuyer:    {Y: true, N: false}
+      super_conforming_flag:   {Y: true, N: false}
+      interest_only_indicator: {Y: true, N: false}
+    sentinels:
+      credit_score:         ["9999"]
+      vantagescore:         ["9999"]
+      mi_percentage:        ["999"]
+      original_cltv:        ["999"]
+      original_ltv:         ["999"]
+      original_dti_ratio:   ["999"]
+      number_of_units:      ["99"]
+      number_of_borrowers:  ["99"]
+      property_type:        ["99"]
+      first_time_homebuyer: ["9"]
+      occupancy_status:     ["9"]
+      channel:              ["9"]
+      loan_purpose:         ["9"]
+      postal_code:          ["000"]
+
+  performance:
+    target_table: fact_loan_performance
+    field_count: 35
+    source_columns:
+      - loan_sequence_number
+      - monthly_reporting_period
+      - current_actual_upb
+      - loan_delinquency_status
+      - loan_age
+      - months_to_maturity
+      - defect_settlement_date
+      - modification_flag
+      - zero_balance_code
+      - zero_balance_effective_date
+      - current_interest_rate
+      - current_non_interest_bearing_upb
+      - ddlpi
+      - mi_recoveries
+      - net_sales_proceeds
+      - non_mi_recoveries
+      - total_expenses
+      - legal_costs
+      - maintenance_costs
+      - taxes_and_insurance
+      - miscellaneous_expenses
+      - actual_loss
+      - cumulative_modification_costs
+      - interest_rate_step_indicator
+      - payment_deferral_flag
+      - estimated_loan_to_value
+      - zero_balance_removal_upb
+      - delinquent_accrued_interest
+      - delinquency_due_to_disaster
+      - borrower_assistance_plan
+      - current_period_modification_costs
+      - current_interest_bearing_upb
+      - mortgage_insurance_cancellation_indicator
+      - servicer_name
+      - bankruptcy_cramdown_costs
+    date_fields:
+      - monthly_reporting_period
+      - defect_settlement_date
+      - zero_balance_effective_date
+      - ddlpi
+    sentinels:
+      estimated_loan_to_value: ["999"]
+      net_sales_proceeds:      ["U"]
