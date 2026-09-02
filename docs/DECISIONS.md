@@ -742,3 +742,30 @@ percentage rather than a gate, reviewed after load rather than enforced
 during it.
 
 **Principle.** Block the impossible, never the merely unusual (S02).
+
+### D-028 | 2026-09-02 | Loan ID length validated in Python, stricter than the SQL CHECK
+
+**Context**
+`vintage_from_loan_id()` derives `vintage_code` from characters 2-5 of the loan
+sequence number. The same rule already exists as a table-level CHECK on
+`fact_loan_performance`, added in `sql/02`. The logic now lives in two places.
+
+**Finding**
+The two are not equivalent. `SUBSTRING()` in PostgreSQL returns whatever
+characters exist and does not fail on a short string, and Python slicing behaves
+the same way. A truncated loan ID of `F05Q1` yields `2005Q1` under both — a valid
+vintage code that satisfies the CHECK and the foreign key. The row loads and is
+indistinguishable from a correct one. Nothing downstream reports it.
+
+**Decision**
+Python rejects any loan ID that is not exactly 12 characters, raising
+`ValueError` with the offending value included. The SQL CHECK is left unchanged.
+The two guards serve different threats: Python fails at parse time with enough
+detail to locate the source row, while the CHECK covers writes that bypass the
+loader entirely — manual inserts, ad-hoc COPY, any future loader.
+
+**Cost**
+The rule is duplicated and the copies can drift. A change to one is not
+propagated to the other automatically, and the divergence is silent. Tightening
+the SQL CHECK to require `length(loan_sequence_number) = 12` would close the
+asymmetry; this is not done here and is carried as an open item for S03 close.
