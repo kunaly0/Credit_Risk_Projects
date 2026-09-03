@@ -27,9 +27,12 @@ CREATE TABLE dim_macro(
 --   loan_sequence_number is position 20 in the file, moved to position 1 here.
 --   The loader must therefore specify an explicit column list in COPY. See S03.
 --
--- vintage_code is assigned by the loader from the source filename (D-020).
---   It does not appear anywhere in the origination file. First Payment Date
---   must never be used for this — it is overwritten on loan modification.
+-- vintage_code is assigned by the loader; it is not present in the file.
+--   Standard files: derived from the filename (one file per quarter, D-020).
+--   Sample files:   derived from loan_sequence_number characters 2-5, because
+--                   the filename gives the year only and carries no quarter.
+--   First Payment Date must never be used for this - it is overwritten on
+--   loan modification.
 --
 -- SENTINEL HANDLING: every documented "not available" code is converted to
 -- NULL during load. The constraints below assume this has already happened,

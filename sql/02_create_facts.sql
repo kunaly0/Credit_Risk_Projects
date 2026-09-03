@@ -22,7 +22,7 @@ DROP TABLE IF EXISTS fact_loan_performance;
 --
 -- SIGN CONVENTION (Release 47): recoveries and gains are normally disclosed
 --   as negative, expenses and losses as positive. This describes the usual
---   direction of a flow, not an invariant, and is NOT enforced here (D-028).
+--   direction of a flow, not an invariant, and is NOT enforced here (D-027).
 --   Profiling sample_perf_2005.txt (3,877,176 rows) found 8 of 15 money
 --   fields carrying values against convention — reversals, clawbacks and
 --   escrow refunds are legitimate servicing activity.
@@ -75,7 +75,7 @@ CREATE TABLE fact_loan_performance(
         payment_deferral_flag                        CHAR(1)           CHECK(payment_deferral_flag IN ('C','P')),
         estimated_loan_to_value                      SMALLINT          CHECK(estimated_loan_to_value BETWEEN 1 AND 998),
         zero_balance_removal_upb                     NUMERIC(12,2)     CHECK(zero_balance_removal_upb >= 0),
-        -- Flow field, no sign constraint (D-028). First field where the
+        -- Flow field, no sign constraint (D-027). First field where the
         -- convention was found to break: -947.03 to +264,875.74.
         delinquent_accrued_interest                  NUMERIC(12,2),
         delinquency_due_to_disaster                  CHAR(1)           CHECK(delinquency_due_to_disaster IN ('Y')),
