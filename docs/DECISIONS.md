@@ -769,3 +769,35 @@ The rule is duplicated and the copies can drift. A change to one is not
 propagated to the other automatically, and the divergence is silent. Tightening
 the SQL CHECK to require `length(loan_sequence_number) = 12` would close the
 asymmetry; this is not done here and is carried as an open item for S03 close.
+
+### D-029 | 2026-09-03 | COPY via psycopg write_row, not a hand-built delimited stream
+
+**Context**
+The sample load is 300,000 origination and 19,860,018 performance rows.
+INSERT was rejected on throughput - D-011 measured ~1,335 rows/sec against the
+cloud database, which is over four hours for the performance file alone. COPY
+is the bulk path. The remaining question was the stream format: FORMAT text or
+FORMAT csv, both with DELIMITER '|'.
+
+**Finding**
+Tested both against a TEMP table. With an empty field between two delimiters,
+FORMAT text loaded an empty string into a text column and reported
+b IS NULL as false, while FORMAT csv loaded a true NULL. On a typed column
+FORMAT text raised "invalid input syntax for type integer". Roughly two-thirds
+of a performance row is empty, so text mode would silently populate text
+columns with '' and every missingness measure in S04 would be wrong.
+The original argument for text - commas inside servicer names - does not hold,
+since FORMAT csv, DELIMITER '|' places commas inside fields safely.
+
+**Decision**
+Neither. The loader uses psycopg 3's copy() with write_row(), passing Python
+tuples. Values are already Python objects by the time they reach the stream,
+because dates are parsed in Python under D-026. psycopg maps None to NULL and
+handles escaping itself, so no delimiter, format flag or NULL marker is chosen
+by hand. FORMAT csv was the fallback but carries residual risk: it reserves the
+double quote, and only sample_perf_2005.txt has been scanned for one.
+
+**Cost**
+write_row is slower than streaming pre-formatted bytes, since psycopg converts
+each value per row. The margin is unmeasured and is a candidate if the
+throughput measurement at step 14 falls short.
