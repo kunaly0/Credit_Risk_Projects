@@ -82,3 +82,18 @@ def get_connection() -> psycopg.Connection:
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
     )
+
+
+def load_origination(path: str) -> dict:
+    counts = {}
+    columns = ", ".join(orig_columns + ["vintage_code"])
+    sql = f"COPY dim_loan ({columns}) FROM STDIN"
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            with cur.copy(sql) as copy:
+                with open(path, encoding="utf-8") as f:
+                    for line in f:
+                        fields = line.rstrip("\n").split("|")
+                        copy.write_row(transform_orig_row(fields, counts))
+    return counts
