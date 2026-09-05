@@ -51,6 +51,7 @@ CREATE TABLE dim_macro(
 --   channel                 '9'  -> NULL
 --   loan_purpose            '9'  -> NULL
 --   postal_code           '000'  -> NULL
+--   property_valuation_method '7'  -> NULL
 --
 -- Field 20 is named "Loan Identifier" as of Release 47. The older name
 -- "Loan Sequence Number" is retained here as it is what twenty years of
@@ -85,7 +86,7 @@ CREATE TABLE dim_loan(
         pre_harp_loan_sequence_number VARCHAR(12),
 		special_eligibility_program   CHAR(1)        CHECK(special_eligibility_program IN ('H','F','R')),
 		harp_indicator                CHAR(1)        CHECK(harp_indicator IN ('Y','N')),
-		property_valuation_method     CHAR(1)        CHECK(property_valuation_method IN ('1','2','3','4','7')),
+		property_valuation_method     CHAR(1)        CHECK(property_valuation_method IN ('1','2','3','4')),
 		interest_only_indicator       BOOLEAN,
 		vantagescore                  SMALLINT       CHECK(vantagescore BETWEEN 300 AND 850)
 );
