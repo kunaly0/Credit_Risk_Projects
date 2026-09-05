@@ -1,14 +1,13 @@
-[toll.black]
+[tool.black]
 line-length = 88
 target-version = ["py313"]
 
-[toll.ruff]
+[tool.ruff]
 line-length = 88
-target-version = "py313"
 
-[toll.ruff.1nit]
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
-[toll.pytest.ini_options]
+[tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test_*.py","*_test.py"]
+python_files = ["test_*.py", "*_test.py"]

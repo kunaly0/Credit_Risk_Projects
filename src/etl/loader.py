@@ -1,5 +1,10 @@
-from src.etl.transforms import parse_yyyymm, vintage_from_loan_id
+import os
+
+import psycopg
 import yaml
+from dotenv import load_dotenv
+
+from src.etl.transforms import parse_yyyymm, vintage_from_loan_id
 
 with open("config/load_config.yaml", encoding="utf-8") as f:
     config = yaml.safe_load(f)
@@ -66,3 +71,14 @@ ORIG_SENTINELS = {
     "postal_code": "000",
     "property_valuation_method": "7",
 }
+
+
+def get_connection() -> psycopg.Connection:
+    load_dotenv()
+    return psycopg.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+    )
