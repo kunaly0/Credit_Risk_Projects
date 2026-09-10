@@ -1,4 +1,5 @@
 import os
+import time
 
 import psycopg
 import yaml
@@ -175,6 +176,7 @@ def transform_perf_row(fields: list[str], counts: dict, range_counts: dict) -> t
 
 
 def load_performance(path: str) -> dict:
+    started = time.perf_counter()
     counts = {}
     range_counts = {}
     rows_read = 0
@@ -238,4 +240,8 @@ def load_performance(path: str) -> dict:
                 "rows_loaded = %s, status = 'success' WHERE run_id = %s",
                 (rows_read, rows_loaded, run_id),
             )
+    elapsed = time.perf_counter() - started
+    print(
+        f"{rows_loaded} rows in {elapsed:.1f}s = {rows_loaded / elapsed:.0f} rows/sec"
+    )
     return counts
