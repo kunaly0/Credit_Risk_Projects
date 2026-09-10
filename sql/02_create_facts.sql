@@ -35,6 +35,15 @@ DROP TABLE IF EXISTS fact_loan_performance;
 --   Sign distributions are monitored in the load audit as a data quality
 --   metric instead of being enforced as a constraint.
 --
+-- MONTHS TO MATURITY can be negative. Scanning sample_perf_2005.txt
+--   (3,877,176 rows) found 16 rows between -1 and -4: loans that ran past
+--   their scheduled maturity date and then paid off, with zero_balance_code
+--   01 and a zero balance. The original CHECK (>= 0) rejected them and
+--   failed the load. Floor relaxed to -12, mirroring loan_age, which
+--   already allows negatives for the opposite case. The bound is not
+--   fitted to the observed -4; five sample vintages remain unscanned.
+--   Logged as D-031.
+
 -- Sentinel / special values converted to NULL at load:
 --   estimated_loan_to_value   999 -> NULL  (confirmed present in data)
 --   net_sales_proceeds        'U' -> NULL  (documented; NOT observed in
@@ -53,7 +62,7 @@ CREATE TABLE fact_loan_performance(
         current_actual_upb                           NUMERIC(12,2)     CHECK(current_actual_upb >= 0),
         loan_delinquency_status                      CHAR(2)           CHECK (loan_delinquency_status ~ '^([0-9]{2}|XX|RA)$'),
         loan_age                                     SMALLINT          CHECK(loan_age >= -12),
-        months_to_maturity                           SMALLINT          CHECK(months_to_maturity >= 0),
+        months_to_maturity                           SMALLINT          CHECK(months_to_maturity >= -12),
         defect_settlement_date                       DATE              CHECK(EXTRACT(DAY FROM defect_settlement_date) = 1),
         modification_flag                            CHAR(1)           CHECK(modification_flag IN ('Y','P')),
         zero_balance_code                            CHAR(2)           CHECK(zero_balance_code IN ('01','02','03','09','15','16','96')),

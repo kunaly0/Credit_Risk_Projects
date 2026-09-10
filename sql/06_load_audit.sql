@@ -12,7 +12,7 @@ CREATE TABLE load_audit(
 CREATE TABLE load_audit_field(
     run_id          BIGINT         NOT NULL REFERENCES load_audit(run_id),
     field_name      VARCHAR(60)    NOT NULL,
-    metric_type     VARCHAR(30)    NOT NULL CHECK(metric_type IN ('sentinel_null','against_convention')),
+    metric_type     VARCHAR(30)    NOT NULL CHECK(metric_type IN ('sentinel_null','against_convention','out_of_range')),
     metric_value    INTEGER        NOT NULL,
     PRIMARY KEY (run_id, field_name, metric_type)
 );

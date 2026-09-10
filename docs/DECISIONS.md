@@ -801,3 +801,113 @@ double quote, and only sample_perf_2005.txt has been scanned for one.
 write_row is slower than streaming pre-formatted bytes, since psycopg converts
 each value per row. The margin is unmeasured and is a candidate if the
 throughput measurement at step 14 falls short.
+
+### D-030 | 2026-09-10 | Sentinel '7' converted on property_valuation_method, retained on
+mortgage_insurance_cancellation_indicator
+
+**Context**
+sql/01's header states that every documented "not available" code is converted
+to NULL at load, and the CHECK constraints assume this has happened.
+property_valuation_method permitted '7' in its CHECK, contradicting that
+header. Reviewing it surfaced a second field, mortgage_insurance_cancellation_
+indicator, which also uses '7', and the two turned out not to be equivalent.
+
+**Finding**
+Three source documents disagree, and the disagreement is one of version, not
+of fact. The User Guide dated January 2026 documents MI Cancellation Indicator
+under the ORIGINATION file at position 32, with four values: Y, N, 7 = Not
+Applicable, 9 = Not Disclosed. Release 47, July 2026, moved the field to the
+Monthly Performance Data File. The disclosure changes summary records the new
+enumeration: 9 is removed and 7 is redefined as "Not Applicable/Not
+Available", merging what were previously two distinct codes.
+
+The disclosure changes summary is the authority here, because it is the
+document that describes the transition to the layout actually being loaded.
+The User Guide is correct for the release it documents and stale for this one.
+
+property_valuation_method '7' carries no such ambiguity. The User Guide and
+the Release 46 redefinition both give it as "Not Available" only.
+
+**Decision**
+property_valuation_method '7' removed from its CHECK in sql/01 and added to
+ORIGINATION sentinels, converting to NULL at load.
+mortgage_insurance_cancellation_indicator '7' retained as a stored value and
+NOT converted. Its merged meaning is documented in the sql/02 header and in
+the S01 performance data dictionary. '9' is not added anywhere: it does not
+exist in Release 47, and a scan of sample_perf_2005.txt found 0 occurrences in
+3,877,176 rows. The same digit means different things on different fields,
+which is why sentinels are keyed per field rather than applied as one rule.
+
+**Cost**
+A retained '7' means the field cannot distinguish a loan that carried no
+mortgage insurance at purchase from one whose cancellation status was not
+disclosed. Partial separation is possible downstream by joining
+dim_loan.mi_percentage = 0. Conversely, converting property_valuation_method
+loses the distinction between "no method recorded" and "no method exists"; the
+load audit sentinel_null count for that field is the only surviving record. In
+the 2005 sample it converted on all 50,000 rows, the field not having been
+collected in 2005.
+
+### D-031 | 2026-09-10 | months_to_maturity floor relaxed from 0 to -12
+
+**Context**
+The first attempt to load sample_perf_2005.txt failed at line 568,109 with a
+CheckViolation on months_to_maturity >= 0. The transaction rolled back and no
+rows were committed.
+
+**Finding**
+Scanning all 3,877,176 rows found 16 negative values, ranging from -1 to -4.
+The failing row shows loan_age 181 on a 180-month term, zero_balance_code 01
+and a zero balance: a loan that ran one month past its scheduled maturity and
+then paid off. Late payoff is ordinary servicing behaviour, so >= 0 encoded an
+assumption rather than an invariant. The schema already anticipated the mirror
+case at the other end of a loan's life, where loan_age >= -12 permits
+negatives for loans acquired before their first payment.
+
+**Decision**
+CHECK relaxed to months_to_maturity >= -12, matching loan_age. The bound is
+not fitted to the observed -4; five sample vintages remain unscanned and a
+loan five months past maturity is no less legitimate than one four months
+past. A floor is retained rather than dropping the constraint, so that a
+garbled field cannot load silently.
+
+**Cost**
+Values between -12 and -1 are now accepted without further scrutiny. If a
+parsing fault ever produced a small negative in this field it would load
+undetected. Negative counts are not currently tracked in the load audit.
+
+### D-032 | 2026-09-10 | Out-of-range current_interest_rate nulled and counted, constraint kept
+
+**Context**
+The second attempt to load sample_perf_2005.txt failed at line 3,484,549 with
+a CheckViolation on current_interest_rate BETWEEN 0 AND 30. The transaction
+rolled back and no rows were committed.
+
+**Finding**
+Scanning all 3,877,176 rows found two values above 30, both exactly 48.750,
+both on loan F05Q40256104 in consecutive reporting periods (2017-03 and
+2017-04). The loan carries modification_flag P with 31,700.00 in
+current_non_interest_bearing_upb. Neither the User Guide nor the disclosure
+changes summary documents any computed or derived rate for modified loans, and
+48.75% is not a plausible mortgage rate under any reading.
+
+This is unlike D-031. There, 16 rows spanned -1 to -4 with an explicable
+mechanism, so the constraint encoded a bad assumption. Here two rows carry one
+identical impossible value with no documented mechanism, so the source data is
+wrong and the constraint is right. Relaxing it would admit corrupt values
+permanently to accommodate a single loan.
+
+**Decision**
+The CHECK is retained unchanged. The loader converts current_interest_rate to
+NULL when it exceeds 30 and records the count in load_audit_field under a new
+metric_type, out_of_range. The rest of each row is loaded: UPB, delinquency
+status and modification flag are all sound, and a bad value in one field
+should cost that field, not the whole record. Dropping the two rows was
+rejected for the same reason.
+
+**Cost**
+The check is upper-bound only; a negative rate would still fail the load, and
+none exists in the 2005 sample. float() now runs on every row of every
+performance file, which is unmeasured overhead and a candidate if step 14's
+throughput falls short. The original 48.750 is not preserved anywhere except
+in the raw file; only the count survives in the audit.
