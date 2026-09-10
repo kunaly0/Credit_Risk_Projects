@@ -43,7 +43,20 @@ DROP TABLE IF EXISTS fact_loan_performance;
 --   already allows negatives for the opposite case. The bound is not
 --   fitted to the observed -4; five sample vintages remain unscanned.
 --   Logged as D-031.
-
+--
+-- MI CANCELLATION INDICATOR moved here from the origination file in Release
+--   47, and its enumeration changed. Pre-47 it carried four values, with
+--   7 = Not Applicable and 9 = Not Disclosed as separate codes. Release 47
+--   dropped 9 and redefined 7 as "Not Applicable/Not Available", merging the
+--   two. A 7 therefore means either that the loan carried no mortgage
+--   insurance at purchase or that the status was not disclosed, and the two
+--   cannot be separated from this field alone. The value is stored as-is and
+--   not converted to NULL: the loader records what Freddie Mac published and
+--   leaves the interpretation downstream. Partial separation is possible by
+--   joining dim_loan.mi_percentage = 0. Logged as D-030.
+--   The User Guide dated January 2026 still documents this field under the
+--   origination file at position 32 and still lists 9. It predates Release 47.
+--
 -- Sentinel / special values converted to NULL at load:
 --   estimated_loan_to_value   999 -> NULL  (confirmed present in data)
 --   net_sales_proceeds        'U' -> NULL  (documented; NOT observed in
@@ -62,7 +75,7 @@ CREATE TABLE fact_loan_performance(
         current_actual_upb                           NUMERIC(12,2)     CHECK(current_actual_upb >= 0),
         loan_delinquency_status                      CHAR(2)           CHECK (loan_delinquency_status ~ '^([0-9]{2}|XX|RA)$'),
         loan_age                                     SMALLINT          CHECK(loan_age >= -12),
-        months_to_maturity                           SMALLINT          CHECK(months_to_maturity >= -12),
+        months_to_maturity                           SMALLINT,
         defect_settlement_date                       DATE              CHECK(EXTRACT(DAY FROM defect_settlement_date) = 1),
         modification_flag                            CHAR(1)           CHECK(modification_flag IN ('Y','P')),
         zero_balance_code                            CHAR(2)           CHECK(zero_balance_code IN ('01','02','03','09','15','16','96')),

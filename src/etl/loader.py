@@ -164,6 +164,10 @@ def transform_perf_row(fields: list[str], counts: dict, range_counts: dict) -> t
             range_counts.get("current_interest_rate", 0) + 1
         )
         results[10] = None
+    if results[5] is not None and int(results[5]) < 0:
+        range_counts["months_to_maturity"] = (
+            range_counts.get("months_to_maturity", 0) + 1
+        )
     loan_id = fields[0]
     vintage = vintage_from_loan_id(loan_id)
     results.append(vintage)
