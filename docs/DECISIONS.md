@@ -911,3 +911,43 @@ none exists in the 2005 sample. float() now runs on every row of every
 performance file, which is unmeasured overhead and a candidate if step 14's
 throughput falls short. The original 48.750 is not preserved anywhere except
 in the raw file; only the count survives in the audit.
+
+## D-033 - Out-of-scope vintages rejected and counted, dim_vintage unchanged
+
+**Context**
+Loading the five remaining sample origination files after 2005, the 2008 file
+failed with a ForeignKeyViolation: vintage_code 2009Q1 is not present in
+dim_vintage. 2006 and 2007 had already committed; 2008 rolled back and 2012
+and 2017 never ran, the exception having ended the loop.
+
+**Finding**
+Counting derived vintages across all three unloaded files gave exactly 12,500
+rows per quarter for 2012 and 2017, and for 2008: 12,500 in Q1, Q2 and Q3,
+12,499 in Q4, and one row in 2009Q1. The sample is drawn as 12,500 per
+quarter, and one 2008Q4 place is occupied by a loan from outside the year.
+
+The row was inspected directly. Loan F09Q10107924: 12 characters, 31 fields,
+first payment 200903, maturity 203902. A well-formed 360-month loan whose
+first payment date agrees with a Q1 2009 origination. It is a genuine 2009Q1
+loan Freddie Mac placed in the 2008 sample file, not corruption and not a
+parsing artefact.
+
+A second finding, incidental but material to Project 1: an equal draw per
+quarter means the sample is stratified, not proportional to origination
+volume. Vintage-level rates computed from it are not volume-weighted.
+
+**Decision**
+dim_vintage stays at 24 rows. The loader rejects any row whose derived vintage
+is not present in the six selected vintages, and records the count in
+load_audit_field under a new metric_type, out_of_scope. The row is rejected
+because it falls outside the declared scope of D-002, not because it is
+defective. Extending dim_vintage would create a vintage bucket holding a
+single loan, which every vintage-level aggregate downstream would then have to
+explain.
+
+**Cost**
+rows_read and rows_loaded can now differ, and the reconciliation at step 11
+must accommodate that. The audit must therefore explain any gap, or a future
+reader cannot distinguish a deliberate rejection from a silent loading fault.
+The rejected loan's identifier is recorded only as a count; the loan itself
+remains in the raw file.

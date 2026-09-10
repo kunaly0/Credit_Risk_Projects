@@ -91,6 +91,8 @@ def get_connection() -> psycopg.Connection:
 def load_origination(path: str) -> dict:
     counts = {}
     rows_read = 0
+    rows_loaded = 0
+    scope_counts = {}
     columns = ", ".join(orig_columns + ["vintage_code"])
     sql = f"COPY dim_loan ({columns}) FROM STDIN"
 
@@ -103,13 +105,22 @@ def load_origination(path: str) -> dict:
                 (path, "dim_loan"),
             )
             run_id = cur.fetchone()[0]
+            cur.execute("SELECT vintage_code FROM dim_vintage")
+            valid_vintages = set()
+            for row in cur.fetchall():
+                valid_vintages.add(row[0])
 
             with cur.copy(sql) as copy:
                 with open(path, encoding="utf-8") as f:
                     for line in f:
-                        fields = line.rstrip("\n").split("|")
-                        copy.write_row(transform_orig_row(fields, counts))
                         rows_read += 1
+                        fields = line.rstrip("\n").split("|")
+                        row = transform_orig_row(fields, counts)
+                        if row[-1] not in valid_vintages:
+                            scope_counts[row[-1]] = scope_counts.get(row[-1], 0) + 1
+                            continue
+                        copy.write_row(row)
+                        rows_loaded += 1
 
             for field_name, value in counts.items():
                 cur.execute(
@@ -119,10 +130,18 @@ def load_origination(path: str) -> dict:
                     (run_id, field_name, value),
                 )
 
+            for field_name, value in scope_counts.items():
+                cur.execute(
+                    "INSERT INTO load_audit_field "
+                    "(run_id, field_name, metric_type, metric_value) "
+                    "VALUES (%s, %s, 'out_of_scope', %s)",
+                    (run_id, field_name, value),
+                )
+
             cur.execute(
                 "UPDATE load_audit SET finished_at = now(), rows_read = %s, "
                 "rows_loaded = %s, status = 'success' WHERE run_id = %s",
-                (rows_read, rows_read, run_id),
+                (rows_read, rows_loaded, run_id),
             )
     return counts
 
@@ -155,6 +174,8 @@ def load_performance(path: str) -> dict:
     counts = {}
     range_counts = {}
     rows_read = 0
+    rows_loaded = 0
+    scope_counts = {}
     columns = ", ".join(perf_columns + ["vintage_code"])
     sql = f"COPY fact_loan_performance ({columns}) FROM STDIN"
 
@@ -167,13 +188,22 @@ def load_performance(path: str) -> dict:
                 (path, "fact_loan_performance"),
             )
             run_id = cur.fetchone()[0]
+            cur.execute("SELECT vintage_code FROM dim_vintage")
+            valid_vintages = set()
+            for row in cur.fetchall():
+                valid_vintages.add(row[0])
 
             with cur.copy(sql) as copy:
                 with open(path, encoding="utf-8") as f:
                     for line in f:
-                        fields = line.rstrip("\n").split("|")
-                        copy.write_row(transform_perf_row(fields, counts, range_counts))
                         rows_read += 1
+                        fields = line.rstrip("\n").split("|")
+                        row = transform_perf_row(fields, counts, range_counts)
+                        if row[-1] not in valid_vintages:
+                            scope_counts[row[-1]] = scope_counts.get(row[-1], 0) + 1
+                            continue
+                        copy.write_row(row)
+                        rows_loaded += 1
 
             for field_name, value in counts.items():
                 cur.execute(
@@ -191,9 +221,17 @@ def load_performance(path: str) -> dict:
                     (run_id, field_name, value),
                 )
 
+            for field_name, value in scope_counts.items():
+                cur.execute(
+                    "INSERT INTO load_audit_field "
+                    "(run_id, field_name, metric_type, metric_value) "
+                    "VALUES (%s, %s, 'out_of_scope', %s)",
+                    (run_id, field_name, value),
+                )
+
             cur.execute(
                 "UPDATE load_audit SET finished_at = now(), rows_read = %s, "
                 "rows_loaded = %s, status = 'success' WHERE run_id = %s",
-                (rows_read, rows_read, run_id),
+                (rows_read, rows_loaded, run_id),
             )
     return counts
