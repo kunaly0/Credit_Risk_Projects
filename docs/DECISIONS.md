@@ -912,7 +912,7 @@ performance file, which is unmeasured overhead and a candidate if step 14's
 throughput falls short. The original 48.750 is not preserved anywhere except
 in the raw file; only the count survives in the audit.
 
-## D-033 - Out-of-scope vintages rejected and counted, dim_vintage unchanged
+### D-033 | 2026-09-10 | Out-of-scope vintages rejected and counted, dim_vintage unchanged
 
 **Context**
 Loading the five remaining sample origination files after 2005, the 2008 file
@@ -951,3 +951,81 @@ must accommodate that. The audit must therefore explain any gap, or a future
 reader cannot distinguish a deliberate rejection from a silent loading fault.
 The rejected loan's identifier is recorded only as a count; the loan itself
 remains in the raw file.
+
+### D-034 | 2026-09-11 | months_to_maturity constraint dropped, supersedes D-031
+
+**Context**
+D-031 relaxed the CHECK from >= 0 to >= -12 after finding 16 rows between -1
+and -4 in sample_perf_2005.txt. Loading sample_perf_2008.txt then failed on a
+value of -13.
+
+**Finding**
+Scanning every sample performance file gave: 2005, 16 rows to -4; 2008, 21 rows
+to -15; 2012, 2 rows to -1; 2017, none. The depth tracks distress, not time.
+The failing row carries loan_delinquency_status RA - REO Acquisition, meaning
+the property was foreclosed and taken into Freddie Mac ownership - at loan_age
+193 on a 180-month term, still holding a balance of 386,283.06.
+
+D-031 claimed its bound was structural rather than fitted. It was fitted, to a
+benign vintage. The mirror it borrowed does not hold: loan_age >= -12 has a
+physical meaning, since a loan cannot be acquired much more than a year before
+its first payment. Nothing bounds how far past scheduled maturity a foreclosure
+or a serially modified loan can run, and the six sample vintages do not contain
+the worst case the standard dataset will.
+
+**Decision**
+The CHECK is removed entirely. The column stays SMALLINT, which is a type, not
+a constraint, and was never in question. Negative values are counted in
+load_audit_field under out_of_range, the same mechanism D-032 introduced for
+current_interest_rate. This closes the gap D-031's Cost section flagged.
+D-031 is superseded.
+
+**Cost**
+A parsing fault producing a negative in this field would now load undetected
+and surface only as a count. No upper bound is defined either; a nonsensically
+large positive value would load unchallenged.
+
+### D-035 | 2026-09-11 | Standard dataset load deferred; D-017 resolved as feasible
+
+**Context**
+D-017 left open whether the full standard dataset could be loaded to local
+PostgreSQL, pending a real throughput measurement. Every earlier figure was
+unusable: the S00 storage test measured RAM, the PowerShell scans in S03
+measured shell overhead, and the load_audit duration column reads 00:00:00
+because both timestamps come from now(), which in PostgreSQL returns the
+transaction start time.
+
+**Finding**
+Timing in Python with time.perf_counter around a reload of
+sample_perf_2017.txt gave 2,800,219 rows in 75.9 seconds: 36,869 rows/sec.
+Against D-011's INSERT baseline of roughly 1,335 rows/sec on the cloud
+database, COPY via psycopg write_row is about 27 times faster.
+
+Extrapolated to the standard dataset: 601,762,231 performance rows at that
+rate is about 4.5 hours, and 8,689,458 origination rows about 4 minutes.
+Storage: 19,859,812 sample rows occupy 3,407 MB across 24 partitions, so the
+standard performance data is roughly 101 GB. With approximately 67 GB of
+source files on the same drive, the total is about 168 GB of 227 GB free.
+
+The measurement is one file, once, with indexes maintained throughout. 2017
+rows carry more empty fields than crisis-vintage rows, so this is likely the
+easiest case rather than a representative one.
+
+**Decision**
+D-017 is resolved: the standard load is feasible. It is deferred, and no
+standard data is loaded now. D-002 develops on the sample and validates on the
+standard dataset, and validation does not begin until S13 at the earliest.
+Loading 101 GB two months ahead of need would leave 59 GB of headroom for
+sorts, index builds and temporary files, alongside everything Projects 0 and 1
+still require on the same drive.
+
+When a validation set is needed, two or three crisis quarters - 2007Q1 and
+2008Q1 give roughly 25 million rows and about 5 GB - will be loaded against a
+stated requirement rather than the full 24.
+
+**Cost**
+The 4.5-hour figure rests on a single measurement of the sparsest vintage and
+is not a committed estimate. A crisis-vintage standard file may be materially
+slower, and the 30x extrapolation is untested. The measurement also includes
+index maintenance during load; dropping and rebuilding indexes would likely be
+faster but needs working disk space not currently available.
