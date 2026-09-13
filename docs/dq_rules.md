@@ -54,3 +54,89 @@ Result      11 Sep 2026 - FAIL
                                       99.1% in 2017
 Action      Both excluded from Project 1 feature candidates.
             Excluded by evidence, not by assumption
+
+R-05  Categorical domain conformance
+Dimension   Validity
+Checks      Every distinct value in a coded field appears in that field's
+            documented domain
+Threshold   Zero values outside the domain
+Why         A code outside its domain cannot be interpreted. Unlike a
+            numeric outlier there is no "close enough"
+Result      12 Sep 2026 - PASS
+            harp_indicator  Y 19,203 / N 280,796 / no NULLs. Domain {Y,N}
+Limitation  The 21 CHECK constraints enforce these domains at load, so a
+            violation could never reach the table. R-05 verifies the
+            constraint is doing its job; it cannot detect a bad value
+            that was rejected at the door. Those live in load_audit_field
+            as out_of_range
+
+R-06  Documented sentinel ceilings
+Dimension   Validity
+Checks      MAX and MIN per field per vintage against the documented range
+Threshold   Report only - no pass/fail
+Why         The ceiling is the finding, not a failure. User Guide field 10:
+            DTI above 65 is disclosed as Not Available, so 65 is a
+            reporting boundary, not a natural maximum. A rule that FAILed
+            on it would be flagging documented behaviour as a defect
+Result      12 Sep 2026
+            original_dti_ratio  2005-2008 max 65 in all 16 quarters
+                                2012-2017 max 50, except 2012Q2 at 57
+            The 50 ceiling is NOT documented in the User Guide and is
+            not enforced in the data - the single 57 proves it. Open
+Finding     DTI above 50 falls from 9.8-14.6% pre-crisis to 0.001% after.
+            A structural break, not drift. Cause unresolved - step 7
+
+R-07  Numeric plausibility
+Dimension   Validity
+Checks      MIN, MAX and a low-end tail count per numeric field per vintage
+Threshold   Report only - no pass/fail
+Why         CHECK constraints enforce the legal range. Plausibility is a
+            separate question and has no defensible cut-off without
+            business input. A $9,000 mortgage is unusual, not invalid.
+            Deleting 129 loans on appearance alone is an unevidenced
+            intervention a validator would reject
+Result      12 Sep 2026
+            original_upb  min 9,000 (2005Q1, 2008Q4)  max 1,187,000 (2012Q4)
+                          129 loans under 20,000 = 0.043% of portfolio
+Findings    All 48 min/max values end in 000 - User Guide field 11 rounds
+            UPB to the nearest $1,000. It is a rounded figure, not exact
+            MAX rises from 692,000 (2005Q1) to 1,187,000 (2012Q4),
+            consistent with conforming loan limits. Untested - the
+            super_conforming_flag column could confirm it
+
+R-08  Duplicate loan-month rows
+Dimension   Uniqueness
+Checks      GROUP BY loan_sequence_number, monthly_reporting_period
+            HAVING COUNT(*) > 1 across all 24 partitions
+Threshold   Zero groups
+Why         The PK is (vintage_code, loan_sequence_number,
+            monthly_reporting_period) - three columns, because PostgreSQL
+            requires the partition key in the PK. So the constraint does
+            NOT block the same loan-month appearing under two different
+            vintages. This check covers that gap. vintage_code is derived
+            in Python from the loan ID, so a derivation fault would put
+            one loan in two partitions and double-count its exposure
+Result      13 Sep 2026 - PASS. 0 duplicate groups across 19,859,812 rows
+
+R-09  Primary key integrity
+Dimension   Uniqueness
+Checks      Duplicate loan_sequence_number in dim_loan
+Threshold   Zero
+Why         Enforced by the PK, so it cannot fail. Retained as evidence
+            the constraint is present and active, not as a live control
+Result      13 Sep 2026 - PASS. 0 duplicate loan_sequence_number
+            across 299,999 rows
+
+R-10  Vintage derivation integrity
+Dimension   Uniqueness / Consistency
+Checks      Each vintage_code pairs with exactly one loan ID prefix
+            GROUP BY vintage_code, LEFT(loan_sequence_number, 5)
+Threshold   Exactly 24 groups - one per vintage
+Why         vintage_code is derived in Python from the loan ID and no
+            database constraint verifies it. A wrong derivation would put
+            loans in the wrong partition, corrupting every vintage-level
+            statistic in Project 1 with nothing to signal it. This is the
+            only uniqueness rule that can actually fail
+Result      13 Sep 2026 - PASS. 24 groups, one prefix per vintage,
+            12,500 loans each except 2008Q4 at 12,499 (loan F09Q10107924
+            rejected at load as out-of-scope 2009Q1, per D-033)
