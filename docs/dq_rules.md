@@ -236,6 +236,26 @@ Result      13 Sep 2026 - PASS
             0 rows across 299,999 loans. D-020's concern did not
             materialise in the sample
 
+            R-14  Missing DTI is explained by HARP
+Dimension   Completeness
+Checks      Loans with original_dti_ratio IS NULL, split by harp_indicator
+Threshold   Report only
+Why         R-03 FAILed 2012 on 34.8% missing DTI. This establishes the
+            cause before any remediation is considered
+Result      13 Sep 2026
+            harp_loans and harp_missing_dti are IDENTICAL in all 24
+            vintages - 100% of HARP loans have no DTI
+            17,399 of 2012's 17,400 missing DTI values are HARP loans
+            19,203 HARP loans portfolio-wide (6.4%), all in 2012 and 2017
+Notes       User Guide field 10: HARP loans are disclosed as Not Available
+            for DTI. The R-03 FAIL is documented behaviour, not a defect
+            Pre-2012 missing DTI has a DIFFERENT cause - zero HARP loans
+            in 2005-2008 yet 4,751 missing. Those are the >65 suppression
+            or genuine unavailability. The same NULL means two different
+            things in different halves of the development window
+Open        3 loans (1 in 2012Q2, 2 in 2017) have no DTI and are not HARP.
+            Probably >65 suppressions, untested
+
 R-15  Reporting gaps in monthly history
 Dimension   Timeliness
 Checks      LAG on monthly_reporting_period converted to a month number,
@@ -281,3 +301,58 @@ Open        Cause unverified. D-020 records that first_payment_date is
             overwritten on modification, and loan_age is presumably
             derived from it, so a modification may stall the counter.
             Testable against modification_flag - step 7
+
+R-17  loan_age repeats explained by modification
+Dimension   Validity
+Checks      Loans with a repeated loan_age, split by whether the loan was
+            EVER modified. Uses MAX(modification_flag) OVER (PARTITION BY
+            loan) to get a per-loan flag, not a per-row one
+Threshold   Report only
+Why         R-16 found the repeats; this tests the cause. D-020 records
+            that first_payment_date is overwritten on modification, and
+            loan_age is derived from it, so a modification should stall
+            the counter
+Result      13 Sep 2026
+            11,606 loans repeat a loan_age
+            10,211 (88.0%) were modified at some point
+Notes       Testing the flag on the repeat row alone gives only 6,127
+            (52.8%). The per-row flag marks the month a modification was
+            reported, so a third of affected loans look unmodified at the
+            moment the age repeats. Any per-loan question about
+            modification must aggregate first - confirms R-12
+Open        1,395 loans (12.0%) repeat an age with no modification
+            anywhere in their history. Unexplained
+
+R-18  Does missing DTI predict performance?
+Dimension   Completeness (missing-data methodology)
+Checks      Loans split by original_dti_ratio IS NULL, compared on whether
+            they ever reached serious delinquency. Serious is defined
+            provisionally as loan_delinquency_status BETWEEN '03' AND '99'
+            or 'RA' (REO acquisition)
+Threshold   Report only
+Why         Establishes whether missingness carries information about the
+            outcome. If it does, imputation destroys a real signal
+Result      13 Sep 2026
+            DTI missing  23,957 loans   1,862 ever serious   7.77%
+            DTI present 276,042 loans  28,335 ever serious  10.26%
+            Missing-DTI loans are ~24% LESS likely to reach serious
+            delinquency - the opposite of the expected direction
+Notes       PROVISIONAL TARGET. "Ever serious" is not the default
+            definition; that is set in S08. Directional evidence only
+            Delinquency status is 100% populated - 'XX' (not available)
+            appears in 0 rows. 'RA' appears in 65,289 rows and is
+            deliberately included, since REO means the loan went bad.
+            Note that >= '03' would sweep in 'RA' silently because letters
+            sort after digits in text comparison - the S01 dictionary
+            caught this before it mattered
+            Likely cause is that HARP refinanced borrowers into better
+            terms, so the observed loan is the post-intervention one.
+            Untested
+Open        CONFOUNDED. Missing-DTI loans are almost entirely 2012 and
+            2017 originations with far shorter observation windows than
+            2005-2008. Vintage and observation length are entangled with
+            the result. A like-for-like comparison needs matched vintages
+            or a fixed observation window - Project 1, S09
+Action      Do NOT impute missing DTI. Missingness separates on the
+            outcome by 2.5 percentage points, so a median fill erases a
+            real signal. Keep "missing" as its own category
