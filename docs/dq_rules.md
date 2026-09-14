@@ -235,3 +235,49 @@ Why         No CHECK constraint enforces this. It was deliberately
 Result      13 Sep 2026 - PASS
             0 rows across 299,999 loans. D-020's concern did not
             materialise in the sample
+
+R-15  Reporting gaps in monthly history
+Dimension   Timeliness
+Checks      LAG on monthly_reporting_period converted to a month number,
+            per loan. A step above 1 means months were never reported
+Threshold   WARN above 0.1% of months missing per vintage,
+            FAIL above 1%
+Why         The User Guide states a servicer can fail to report a month,
+            so a hole is documented and expected, not corruption. The rule
+            measures the rate. 1% would mean one month in a hundred is
+            absent, at which point time-to-default and performance windows
+            in Project 1 stop being reliable
+Result      13 Sep 2026 - PASS
+            106 loans of 299,999 (0.035%) have at least one gap
+            643 months missing of 19,859,812 (0.0032%)
+            107 gap events from 106 loans - one loan went dark twice
+Notes       24 of 107 gaps (22%) fall within 3 months of the loan's final
+            reporting month; average is 35 months before the end. Most
+            gaps are ordinary mid-life misses, but a fifth sit where
+            deterioration before termination would be hidden. Those loans
+            need checking in Project 1
+
+R-16  loan_age is not a reliable monthly counter
+Dimension   Validity
+Checks      LAG on loan_age per loan; a step of 0 means the same age was
+            reported in two different months
+Threshold   Report only
+Why         Found while measuring R-15. Gap counts computed from loan_age
+            disagreed with counts computed from dates, and chasing the
+            difference exposed the cause
+Result      13 Sep 2026
+            471,248 rows (2.4% of the fact table) across 11,606 loans
+            (3.9% of the portfolio) repeat the previous row's loan_age
+            All such steps are exactly 0 - repeats, never backwards
+Notes       Measuring gaps on loan_age gave 88 loans / 688 months by
+            arithmetic and 102 / 754 by LAG. The date-based figure is
+            106 / 643. Both loan_age methods were wrong in both
+            directions. Loan F05Q10002092 has 249 rows across a 249-month
+            span with no gap at all, yet the arithmetic method scored it
+            -1 and excluded it
+            Any Project 1 feature built on loan_age - seasoning,
+            time-to-default, performance windows - inherits this
+Open        Cause unverified. D-020 records that first_payment_date is
+            overwritten on modification, and loan_age is presumably
+            derived from it, so a modification may stall the counter.
+            Testable against modification_flag - step 7
