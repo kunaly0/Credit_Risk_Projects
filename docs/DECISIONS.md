@@ -1029,3 +1029,42 @@ is not a committed estimate. A crisis-vintage standard file may be materially
 slower, and the 30x extrapolation is untested. The measurement also includes
 index maintenance during load; dropping and rebuilding indexes would likely be
 faster but needs working disk space not currently available.
+
+### D-036 | 2026-09-14 | Missing-data methodology established
+
+Context   S04 measured missingness across every dimension. Project 1 will
+          have to decide what to do with each absent value, and that
+          decision is only defensible if the reason for the absence is
+          known first. Deciding field by field during feature work would
+          mean improvising under time pressure.
+
+Finding   Missingness in this dataset has three distinct causes, and they
+          demand opposite treatments. Documented suppression: HARP loans
+          carry no DTI by disclosure rule, and DTI above 65 is withheld
+          (R-14, R-06). Field non-existence: vantagescore and
+          property_valuation_method are Release 47 additions that did not
+          exist for these originations (R-04). Incidental absence:
+          credit_score at 0.06%, with no discernible pattern (R-03).
+          Separately, loan_age is present but unreliable - 2.4% of rows
+          repeat the previous value, 88% of affected loans modified
+          (R-16, R-17).
+
+Decision  A methodology document at docs/missing_data_methodology.md, one
+          entry per field, each carrying evidence, a decision and a
+          caveat. Three permitted decisions: KEEP AS CATEGORY, IMPUTE,
+          EXCLUDE. Five fields decided:
+            original_dti_ratio         KEEP AS CATEGORY
+            credit_score               IMPUTE
+            vantagescore               EXCLUDE
+            property_valuation_method  EXCLUDE
+            loan_age                   EXCLUDE column, DERIVE quantity
+          These bind Project 1 feature work unless superseded by a dated
+          entry here.
+
+Cost      The DTI decision rests on a provisional target - "ever 90+ days
+          past due" - because the real default definition is not set until
+          S08. R-18 is also confounded: missing-DTI loans are almost
+          entirely 2012 and 2017 originations with far shorter observation
+          windows. Both must be revisited at S09. The credit_score
+          decision was never tested against the outcome at all; it rests
+          on the rate being negligible.
