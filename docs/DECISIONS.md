@@ -1068,3 +1068,42 @@ Cost      The DTI decision rests on a provisional target - "ever 90+ days
           windows. Both must be revisited at S09. The credit_score
           decision was never tested against the outcome at all; it rests
           on the rate being negligible.
+
+### D-037 | 2026-09-15 | dq_results design - long format, surrogate key, write-before-run
+
+Context   S04 produced 18 rules whose results come in incompatible shapes.
+          R-01 is a single portfolio number. R-03 is one number per field
+          per vintage, 48 rows for two fields and 768 if run across all
+          32. R-12 emits six measurements from one query. A results table
+          has to hold all of them, and keep holding new ones as rules are
+          added in S06 and Project 1, without a schema change each time.
+
+Finding   load_audit_field already solved the shape problem in S03 by
+          naming the measurement in metric_type and holding it in
+          metric_value. The same structure absorbs every S04 shape. Two
+          further requirements surfaced that load_audit_field does not
+          meet: results need a scope (portfolio, vintage, field or both),
+          and portfolio-scope results have no scope value at all, which
+          rules out a composite primary key because PostgreSQL forbids
+          NULL in one.
+
+Decision  dq_results in long format: run_id, rule_id, scope_type,
+          scope_value, metric_name, metric_value, status, checked_at,
+          keyed on a BIGSERIAL surrogate. scope_value stays nullable
+          rather than carrying a sentinel such as 'ALL', because NULL
+          means not-applicable and a sentinel would be indistinguishable
+          from a real scope. Duplicate protection comes from a UNIQUE
+          constraint on the natural key, declared NULLS NOT DISTINCT so
+          that it still binds when scope_value is empty.
+          The suite writes each row with status 'running' BEFORE executing
+          the rule, committed on a separate connection, then updates it to
+          pass, warn or fail. A 'running' row surviving the suite is the
+          evidence a rule crashed.
+
+Cost      The separate connection makes the runner more complex than a
+          single transaction: two connections to manage, and an update
+          path that must run even when the rule raises. Rules are also
+          split across rows, so reading R-12's six measurements back means
+          six rows rather than one, and any dashboard must pivot them.
+          NULLS NOT DISTINCT requires PostgreSQL 15 or later, so the
+          schema is no longer portable to older versions.
