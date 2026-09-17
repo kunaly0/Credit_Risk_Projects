@@ -1,31 +1,10 @@
+# Virtual environment
 .venv/
-__pycache__/
-*.py[cod]
-.env
-.env.*
-!.env.example
-.ipynb_checkpoints/
-.vscode/
-*.log
-.DS_Store
-Thumbs.db
-# Project data
-data/raw/*
-data/processed/*
-data/interim/*
-data/external/*
-
-# Keep directory structure in Git
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/interim/.gitkeep
-!data/external/.gitkeep
-
-# Tool caches
-.ruff_cache/
 
 # Environment files
 .env
+.env.*
+!.env.example
 
 # Python caches
 __pycache__/
@@ -34,8 +13,14 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Test/coverage output
+# Editor
+.vscode/
+
+# Tool caches
+.ruff_cache/
 .pytest_cache/
+
+# Test/coverage output
 .coverage
 htmlcov/
 
@@ -44,7 +29,23 @@ build/
 dist/
 *.egg-info/
 
-Scratch/
+# OS
+.DS_Store
+Thumbs.db
 
-docs/PHASE1_BLUEPRINT.md
+# Logs
+*.log
+
+# Local working files
 Scratch/
+docs/PHASE1_BLUEPRINT.md
+
+# Project data - keep the directory structure, not the contents
+data/raw/*
+data/processed/*
+data/interim/*
+data/external/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/interim/.gitkeep
+!data/external/.gitkeep
