@@ -13,7 +13,43 @@ Labels are padded to 12 characters; continuation lines indent 12 spaces.
   Notes       optional - limitations, related findings, actions taken
   Open        optional - unresolved items. Step 10 collects these
 
-Queries live in sql/dq/. Results move to the dq_results table at step 8.
+Queries live in sql/dq/. Results are persisted to dq_results by
+src/dq/run_dq_suite.py for the eight automated rules; the Result lines
+below are the dated findings from when each rule was first written.
+
+---
+
+## Automation status
+
+Eight rules run in src/dq/run_dq_suite.py and persist to dq_results:
+  R-03  R-05  R-08  R-09  R-10  R-11  R-13  R-15
+
+The other ten do not, for three different reasons.
+
+REPORT-ONLY - these produce a number for a human to read, not a verdict.
+Automating them would persist a result nobody acts on.
+  R-06  documented DTI ceilings
+  R-07  numeric plausibility
+  R-12  current balance above original
+  R-16  loan_age repeats
+  R-17  loan_age repeats explained by modification
+  R-18  does missing DTI predict performance
+
+AUDIT-TRAIL - these compare the loader's records against the data, not
+the data against itself. They belong to a load run, not a DQ run, and
+should move into the loader when defect #12 is fixed.
+  R-01  row counts, audit vs table. Currently FAILS
+  R-02  sentinel counts, audit vs table
+
+ONE-OFF FINDINGS - established once, not re-measured each run.
+  R-04  absolute completeness floor - vantagescore, property_valuation_method
+  R-14  missing DTI explained by HARP
+
+Known limitation: R-03 applies one threshold pair to both fields it
+covers, derived from original_dti_ratio's baseline of 2.62%. credit_score
+is therefore judged against the wrong baseline. It has not produced a
+false positive yet, but it would if credit_score missingness rose.
+Per-field thresholds need a rule structure the runner does not have.
 
 ---
 
@@ -178,7 +214,11 @@ Result      13 Sep 2026 - PASS
 Notes       The 2008Q4 shortfall is loan F09Q10107924, rejected at load as
             out-of-scope 2009Q1 per D-033. The loader derives vintage from
             the loan ID, not the filename - had it trusted the filename,
-            the loan would have loaded silently as 2008
+            the loan would have loaded silently as 2008,
+            Automated as ABS(COUNT(*) - 24) rather than a raw count, so
+            both 25 groups and 23 fail. fail_above alone cannot express
+            "not exactly 24", and 23 groups - a lost vintage - would
+            otherwise pass silently
 
 R-11  Referential integrity, fact to dimension
 Dimension   Consistency

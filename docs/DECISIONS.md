@@ -1107,3 +1107,87 @@ Cost      The separate connection makes the runner more complex than a
           six rows rather than one, and any dashboard must pivot them.
           NULLS NOT DISTINCT requires PostgreSQL 15 or later, so the
           schema is no longer portable to older versions.
+
+### D-038 | 2026-09-17 | Runner duplicates get_connection rather than importing it
+
+Context   The DQ suite runner needs a database connection. loader.py
+          already has get_connection, tested across six vintage loads in
+          S03, and reusing it would keep one definition of how the project
+          connects.
+
+Finding   loader.py opens config/load_config.yaml at MODULE level, not
+          inside a function, on a relative path. Importing anything from
+          it therefore loads that config before the first line of calling
+          code runs, and fails outright unless launched from the repo
+          root. The runner needs none of that config - it reads SQL from
+          its own RULES list.
+
+Decision  Duplicate get_connection in src/dq/run_dq_suite.py. Six lines,
+          no yaml import, no config dependency. Verified by running the
+          file from D:\Projects, outside the repo entirely: it connected.
+
+Cost      Two definitions of get_connection in one repo. A change to
+          connection handling - a new credential, a pooling layer, an SSL
+          requirement - must be made in both places, and nothing enforces
+          that. The cleaner long-term fix is to move loader.py's config
+          load inside its functions, after which both files could share
+          one definition. Not attempted in S04.
+
+### D-039 | 2026-09-17 | Disk sleep disabled on D:
+
+Context   Twice during S04, every query against fact_loan_performance
+          failed with "could not read blocks 0..0 ... Invalid argument",
+          while dim_loan queries continued to work. Each time the fix was
+          restarting the PostgreSQL service.
+
+Finding   dim_loan sits in the default tablespace on C:; the fact
+          partitions sit in credit_risk_ts on D:. The server log recorded
+          "unrecognized win32 errorcode: 21" - ERROR_NOT_READY, meaning
+          Windows reported the device unavailable. The laptop had slept
+          between sessions, D: was powered down and remounted, and the
+          running server held file handles pointing at a drive that was
+          no longer there. The data was never damaged: all 72 files, 2.45
+          GB, present throughout.
+
+Decision  powercfg /change disk-timeout-ac 0 and disk-timeout-dc 0.
+          Verified: DISKIDLE reads 0x00000000 on both AC and DC. Zero
+          seconds means never.
+
+Cost      Slightly higher battery drain, since drives stay spun up.
+          Moving the tablespace to C: would remove the problem class
+          entirely rather than suppressing its cause - C: has 110 GB free
+          against 3.4 GB of data - but costs a rebuild. Restarting the
+          service on each occurrence was the third option and is a
+          workaround, not a fix; it was rejected for that reason.
+
+### D-040 | 2026-09-17 | Pre-commit hooks routed through python -m
+
+Context   Mid-S04, commits began failing with WinError 4551, "An
+          Application Control policy has blocked this file". Five of the
+          nine hooks failed at once, and pre-commit.exe itself would not
+          run from the command line.
+
+Finding   Windows Smart App Control had finished its evaluation period
+          and switched itself on, which blocks unsigned executables.
+          Everything pip installs into a virtual environment is unsigned.
+          The Code Integrity log named .venv\Scripts\pre-commit.exe
+          explicitly. python.exe is signed, so python -m pre_commit ran
+          normally - the block is on the executable shims, not the code.
+          Smart App Control offers no per-app exception and no "run
+          anyway"; it can only be turned off, which has historically been
+          irreversible without reinstalling Windows.
+
+Decision  Convert black, ruff and detect-secrets to repo: local hooks with
+          language: system, invoked as python -m. detect-secrets moves
+          from pre-commit's own cache to a declared project dependency.
+          Smart App Control is left ON. The eight remaining hooks are
+          unchanged and began passing again on their own.
+
+Cost      Black and ruff are configured but UNPROVEN - no .py file has
+          been staged since the change, so neither has fired. Must be
+          confirmed on the next Python commit.
+          Hook versions are no longer pinned by rev: for the three local
+          hooks; they now track whatever is installed in .venv, so
+          formatting could shift on an unrelated upgrade. Why the other
+          eight recovered without intervention is unexplained, so the
+          recovery should not be relied on.
