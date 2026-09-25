@@ -1191,3 +1191,26 @@ Cost      Black and ruff are configured but UNPROVEN - no .py file has
           formatting could shift on an unrelated upgrade. Why the other
           eight recovered without intervention is unexplained, so the
           recovery should not be relied on.
+
+### D-041 | 2026-09-24 | dim_macro stores latest revised figures only, not past versions
+
+Context   FRED serves only the current version of each series. Macro data
+          is revised after publication - GDP several times in the first
+          months and again years later, HPI as late sales arrive, UNRATE
+          every January. ALFRED keeps every past version.
+
+Finding   Q4 2008 real GDP (GDPC1), change vs Q3: -0.96% as known on
+          15 Feb 2009, -2.19% as known today. The first estimate showed
+          less than half the real fall, during the crisis itself.
+
+Decision  Store latest figures only, with the date they were pulled.
+          Enough for Project 0 and Project 1, where performance-window
+          macro is not a scoring feature.
+
+Cost      Any backtest joined to dim_macro uses revised numbers the bank
+          did not have at the time, so it overstates what was knowable.
+          Must be stated as a limitation wherever such a backtest appears.
+
+Revisit   When Project 4 needs ECL backtested as of past reporting dates.
+          Reversible - ALFRED keeps the history, so as-known figures can
+          be fetched then.
