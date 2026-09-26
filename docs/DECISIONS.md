@@ -495,6 +495,27 @@ enough to fit on `C:` and remove the trade-off entirely.
 **Viability unchanged:** 63 GB → ~72 GB in Postgres is achievable on either
 drive. This is a time-budget question, not a capacity question.
 
+### D-018 | 2026-08-23 | Stale environment documentation removed
+**Recorded late (2026-09-26).** Drafted at S00 close but never pasted into
+this file. Found in S06 from the gap between D-017 and D-020; git history
+shows D-018 was never committed. Text below is the S00 draft, unchanged,
+plus a status line.
+**Found:** Project knowledge document described pre-S00 state (empty data
+folders, no .env, packages that were absent). Fourth instance of
+documentation recording intent rather than verified state (D-006, D-010).
+**Action:** Replaced with a current environment document. Blueprint moved
+to `docs/PHASE1_BLUEPRINT.md` as the authoritative version.
+**Control:** Environment documentation is refreshed at every section close,
+alongside the Section Pack and DECISIONS.md entries.
+**Status (2026-09-26):** docs/PHASE1_BLUEPRINT.md confirmed present. Whether
+the section-close refresh has actually happened since S00 is not verified -
+check in the S07 governance report.
+
+### D-019 | S00 | Number not used
+**Recorded 2026-09-26.** Floated during the D-016 discussion in S00; the
+resolution was folded into D-016 instead, so no D-019 decision exists.
+Number retired, never reused.
+
 ### D-020 | 2026-08-24 | Vintage assignment: use file, not date field
 
 Sample origination First Payment Date extends years past nominal vintage
