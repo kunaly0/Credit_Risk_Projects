@@ -1214,3 +1214,31 @@ Cost      Any backtest joined to dim_macro uses revised numbers the bank
 Revisit   When Project 4 needs ECL backtested as of past reporting dates.
           Reversible - ALFRED keeps the history, so as-known figures can
           be fetched then.
+
+D-042  State macro series stored in a new table, dim_macro_state
+
+Context   S06 adds state unemployment and state HPI. dim_macro (S02,
+          D-024) holds national series at one row per month. dim_loan
+          has 54 property_state values - 50 states, DC, PR, GU, VI.
+
+Decision  New table dim_macro_state, one row per state per month:
+          month, property_state, unemployment, hpi. Composite primary
+          key (property_state, month). property_state is char(2),
+          identical to dim_loan - verified live via information_schema.
+          Missing values stored as NULL, never a placeholder zero; hpi
+          must be > 0. Created by new migration sql/08 - applied
+          scripts are never edited.
+
+Rejected  Widening dim_macro - 54 states x 2 series = 108 new columns,
+          and adding or dropping a state changes the table structure.
+          One merged table at month + state grain - GDP and mortgage
+          rate copied 54 times per month, and the copies can drift.
+
+Cost      No dim_state, so no foreign key. The database does not check
+          that state codes here are real or match dim_loan - 'ZZ'
+          passes the format check. Only the S06 Step 7 anti-join proves
+          the match, and it must be rerun after every reload.
+
+Revisit   When a state-level attribute is needed, e.g. a judicial
+          foreclosure flag for Project 2 LGD. That justifies dim_state
+          (reopening D-024) and a foreign key from this table.
