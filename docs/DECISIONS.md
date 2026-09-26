@@ -1215,7 +1215,7 @@ Revisit   When Project 4 needs ECL backtested as of past reporting dates.
           Reversible - ALFRED keeps the history, so as-known figures can
           be fetched then.
 
-D-042  State macro series stored in a new table, dim_macro_state
+### D-042 | 2026-09-26 | State macro series stored in a new table, dim_macro_state
 
 Context   S06 adds state unemployment and state HPI. dim_macro (S02,
           D-024) holds national series at one row per month. dim_loan
@@ -1242,3 +1242,32 @@ Cost      No dim_state, so no foreign key. The database does not check
 Revisit   When a state-level attribute is needed, e.g. a judicial
           foreclosure flag for Project 2 LGD. That justifies dim_state
           (reopening D-024) and a foreign key from this table.
+
+### D-043 | 2026-09-26 | Frequency alignment onto the monthly grain
+
+Context   dim_macro and dim_macro_state hold one row per month. GDPC1 and
+          state HPI are quarterly, stamped on the first day of the
+          quarter. MORTGAGE30US is weekly, ending Thursday.
+
+Decision  Quarterly series: the quarter's value repeated in all three
+          months. Mortgage rate: average of the month's weekly values,
+          a week counting in the month its Thursday falls in. GDP
+          growth: annualised quarter-on-quarter,
+          ((Q / previous Q) ^ 4 - 1) x 100, calculated in our code from
+          raw GDPC1 levels. Values keyed by the period they describe,
+          not the date they were published.
+
+Rejected  Interpolation - invents unmeasured values and needs the next
+          quarter, published months later (look-ahead). First month
+          only - joins lose two-thirds of the data. Month-end weekly
+          rate - a snapshot, while other monthly series describe the
+          whole month. Year-on-year GDP - smoother, but Fed scenarios
+          are written as annualised quarterly growth.
+
+Cost      Step jumps at quarter boundaries. Annualised growth is
+          volatile, with extreme values in crisis quarters. Publication
+          lag not modelled - Q1 values sit on January rows though
+          published in late April. A limitation alongside D-041.
+
+Revisit   If a model needs smoother GDP, recalculate year-on-year from
+          the raw GDPC1 levels. No re-pull needed.
