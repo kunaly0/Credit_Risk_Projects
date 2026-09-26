@@ -1271,3 +1271,26 @@ Cost      Step jumps at quarter boundaries. Annualised growth is
 
 Revisit   If a model needs smoother GDP, recalculate year-on-year from
           the raw GDPC1 levels. No re-pull needed.
+
+### D-044 | 2026-09-26 | Migration 09 corrects two dim_macro CHECKs from S02
+
+Context   The first load_fred.py run stopped on
+          dim_macro_gdp_growth_check: Q3 2020 annualised growth +34.86
+          (COVID rebound) broke the S02 range of -30 to +30. The
+          transaction rolled back - nothing loaded. The S02 range was a
+          guess at plausible values, written as a rule about impossible
+          ones. dim_macro_hpi_check allowed hpi = 0, the placeholder
+          zero that D-042 forbids.
+
+Decision  sql/09, one transaction: hpi > 0; gdp_growth >= -100 with no
+          upper bound. A CHECK blocks only impossible values - growth
+          below -100 means the economy shrank below zero. numeric(5,2)
+          still caps the column at 999.99.
+
+Rejected  Switching GDP to year-on-year so values fit +-30 - picks a
+          method to suit a guessed limit, against D-043. Capping values
+          at 30 - falsifies real data.
+
+Cost      Rare but real values now load without a CHECK stopping them.
+          A Step 6 DQ rule must flag large moves for review with a
+          written explanation, or they pass silently.
