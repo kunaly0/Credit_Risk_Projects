@@ -1,0 +1,26 @@
+# macro_config.yaml - FRED series for dim_macro and dim_macro_state.
+#
+# Decisions: D-041 latest figures only, D-043 frequency alignment.
+# Raw responses are saved unchanged under DATA_ROOT/raw_subdir/<pull timestamp>/.
+# The state list is not set here - it is read from dim_loan.property_state.
+
+fred:
+  url: "https://api.stlouisfed.org/fred/series/observations"
+  timeout_seconds: 30
+  pause_seconds: 0.6          # FRED allows 120 requests a minute
+  max_attempts: 3
+
+pull_start: "1999-01-01"      # a year before table_start, so GDP growth has history
+table_start: "2000-01-01"     # first month written to the tables
+
+raw_subdir: "Raw/FRED"
+
+national:                     # dim_macro column -> FRED series
+  unemployment:  {series_id: UNRATE,       frequency: monthly}
+  hpi:           {series_id: HPIPONM226S,  frequency: monthly}
+  mortgage_rate: {series_id: MORTGAGE30US, frequency: weekly}
+  gdp_growth:    {series_id: GDPC1,        frequency: quarterly, transform: annualised_growth}
+
+state:                        # dim_macro_state column -> FRED series; {state} = CA, TX
+  unemployment: {series_id: "{state}UR",    frequency: monthly}
+  hpi:          {series_id: "{state}STHPI", frequency: quarterly}
