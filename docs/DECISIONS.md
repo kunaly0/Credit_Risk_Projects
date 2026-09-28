@@ -1315,3 +1315,30 @@ Rejected  Switching GDP to year-on-year so values fit +-30 - picks a
 Cost      Rare but real values now load without a CHECK stopping them.
           A Step 6 DQ rule must flag large moves for review with a
           written explanation, or they pass silently.
+
+### D-045 | 2026-09-28 | Macro gaps stored as they are - never filled in the dim tables
+
+Context   After the first full load (S06 Step 6), three kinds of gap.
+          October 2025 unemployment was never measured - the US
+          shutdown stopped the household survey and BLS will not
+          collect it retroactively. NULL nationally and for 50 states
+          + DC. PR has no state HPI series and no unemployment for
+          March-April 2020 (survey stopped in the COVID lockdown).
+          GU and VI have no state series at all.
+
+Decision  Leave every gap as it is. A missing value stays NULL. A month
+          with no values at all gets no row - load_fred.py drops empty
+          rows (a choice made in the script, confirmed here), so the
+          gap shows up in the Step 7 anti-join instead of hiding behind
+          a row of NULLs. GU and VI get no rows.
+
+Rejected  Interpolating October 2025 - needs November, published later
+          (look-ahead, as in D-043), and invents a number BLS says does
+          not exist. Carrying September forward - also invented.
+          Keeping empty rows of NULLs - a join finds a row and the gap
+          hides unless every column is checked.
+
+Cost      Every model or report using these columns must handle NULLs
+          and missing rows itself. If a model needs a fill, it happens
+          in that model's own feature step, flagged as derived, and is
+          never written back to the dim tables.
