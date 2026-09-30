@@ -1367,3 +1367,26 @@ seasonally adjusted. Revisit in S10 when macro features are chosen.
 Rejected: replacing the state series with FHFA's state purchase-only index. It is
 not confirmed on FRED, so it means a second source and a reload, and nothing uses
 state HPI before S10.
+
+## D-047 - Fact partitions moved from D: to C: (30 Sep 2026)
+
+Supersedes D-022.
+
+| Evidence | Result |
+|---|---|
+| Read failures | Three, all reading fact table data on credit_risk_ts (D:): two in S05, one on 28 Sep |
+| D: | 306 GB partition of a laptop hard disk (Seagate ST1000LM035), NTFS, Healthy |
+| C: | Separate disk, Samsung NVMe SSD, NTFS, Healthy |
+| Fact indexes | All 48 on pg_default (C:). Created without a TABLESPACE clause, so they went to the database default. Not decided at the time |
+| Server log, 28 Sep | Gate query stopped 16:23. Server shut down and restarted at 16:24:29 and 16:24:55. The S06 handoff said no restart |
+
+Decision: move the 24 fact partitions to pg_default (C:). Every failure was a read
+of table data on D:, and nothing on C: has failed, even though C: holds all 48
+indexes and every dimension table and is read constantly. Root cause not found.
+
+Also: copy D:\Datasets\Raw to C:\Backup\Datasets\Raw so the raw layer is on both
+disks. working/ is rebuilt from Raw and is not copied.
+
+Cost: the S03 throughput figures were measured on the old layout and no longer
+describe the current setup. The move adds about 12 GB to C: against 110 GB free,
+and if C: fails the database can be rebuilt from Raw on D:.
