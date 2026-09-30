@@ -1342,3 +1342,28 @@ Cost      Every model or report using these columns must handle NULLs
           and missing rows itself. If a model needs a fill, it happens
           in that model's own feature step, flagged as derived, and is
           never written back to the dim tables.
+
+## D-046 - Macro series selection (recorded late, 30 Sep 2026)
+
+Chosen in S06 Step 2b. Not logged at the time; found owed at S06 close.
+
+| Column | Series | Why |
+|---|---|---|
+| dim_macro.hpi | HPIPONM226S - FHFA purchase-only, monthly, seasonally adjusted | Built from mortgages Fannie Mae and Freddie Mac bought, so the same kind of homes as the book. Sale prices only. Monthly. Cost: national only |
+| dim_macro.mortgage_rate | MORTGAGE30US | Freddie Mac's own survey, same publisher as the loan data, pricing the same product. The book is 100% fixed-rate |
+| dim_macro.unemployment | UNRATE | Official national unemployment rate (BLS) |
+| dim_macro.gdp_growth | GDPC1 | Real GDP, adjusted for inflation, so growth shows whether the economy actually grew, not just prices |
+| dim_macro_state.unemployment | {ST}UR | Same BLS measure as UNRATE at state level, so national and state unemployment can be compared |
+| dim_macro_state.hpi | {ST}STHPI - FHFA all-transactions, quarterly, not seasonally adjusted | See mismatch below |
+
+HPI mismatch, found after the choice and not decided at the time: state HPI is a
+different index from national HPI. It includes refinance appraisals as well as
+sales, it is quarterly not monthly, and it is not seasonally adjusted.
+
+Decision: keep both. The two HPI columns are never compared directly. Any change
+calculated on state HPI uses year-on-year change, because the index is not
+seasonally adjusted. Revisit in S10 when macro features are chosen.
+
+Rejected: replacing the state series with FHFA's state purchase-only index. It is
+not confirmed on FRED, so it means a second source and a reload, and nothing uses
+state HPI before S10.
