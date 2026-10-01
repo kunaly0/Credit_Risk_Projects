@@ -1391,7 +1391,31 @@ Context   Read failures ("could not read blocks 0..0 ... Invalid
 
 Decision  sql/10, one transaction: move the 24 fact partitions to
           pg_default (C:). Every failure was a read of table data on
-          D:, and nothing on C: has
+                    D:, and nothing on C: has failed, even though C: holds all 48
+          indexes and every dimension table and is read constantly.
+          Copy D:\Datasets\Raw to C:\Backup\Datasets\Raw so the raw
+          layer is on both disks. working/ is rebuilt from Raw and is
+          not copied.
+
+Rejected  Keeping the fact tables on D: - Project 1 reads all 19.86M
+          rows repeatedly, so a path that fails on reads fails more
+          often, mid-work.
+
+Cost      S03 throughput figures were measured on the old layout and no
+          longer describe the current setup. About 12 GB added to C:
+          against 110 GB free. If C: fails, the database is rebuilt
+          from Raw on D:.
+
+Corrected 2026-10-01. The server log shows 12 read failures, not 3, on
+          five days (13, 14, 18, 24 and 28 Sep). Only three were
+          recorded in handoffs. All 12 were on credit_risk_ts (D:), all
+          on block 0, across four files. Decision unchanged; evidence
+          stronger. The 30 Sep log search looked empty because
+          PowerShell printed the matches as blank lines after an
+          earlier table.
+
+Reopen    If this error appears for a file on C:, the disk was not the
+          cause and this decision is reopened.
 
 Follow-up 2026-10-01. The parent table never had a tablespace; each
           partition was placed by its own TABLESPACE clause in sql/03.
