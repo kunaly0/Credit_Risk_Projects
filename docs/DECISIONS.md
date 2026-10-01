@@ -1392,3 +1392,12 @@ Context   Read failures ("could not read blocks 0..0 ... Invalid
 Decision  sql/10, one transaction: move the 24 fact partitions to
           pg_default (C:). Every failure was a read of table data on
           D:, and nothing on C: has
+
+Follow-up 2026-10-01. The parent table never had a tablespace; each
+          partition was placed by its own TABLESPACE clause in sql/03.
+          Those 24 clauses are removed, so a rebuild puts the partitions
+          on pg_default. No script in the repo created credit_risk_ts -
+          it was made by hand and never recorded, so before this change
+          the repo could not be rebuilt on another machine. The empty
+          tablespace is dropped (sql/11) so nothing lands on D: by
+          accident.
