@@ -1343,50 +1343,52 @@ Cost      Every model or report using these columns must handle NULLs
           in that model's own feature step, flagged as derived, and is
           never written back to the dim tables.
 
-## D-046 - Macro series selection (recorded late, 30 Sep 2026)
+### D-046 | 2026-09-30 | Macro series selection (recorded late)
 
-Chosen in S06 Step 2b. Not logged at the time; found owed at S06 close.
+Context   Series chosen in S06 Step 2b but never logged; found owed at
+          S06 close. The HPI mismatch below was found after the choice,
+          not decided at the time.
 
-| Column | Series | Why |
-|---|---|---|
-| dim_macro.hpi | HPIPONM226S - FHFA purchase-only, monthly, seasonally adjusted | Built from mortgages Fannie Mae and Freddie Mac bought, so the same kind of homes as the book. Sale prices only. Monthly. Cost: national only |
-| dim_macro.mortgage_rate | MORTGAGE30US | Freddie Mac's own survey, same publisher as the loan data, pricing the same product. The book is 100% fixed-rate |
-| dim_macro.unemployment | UNRATE | Official national unemployment rate (BLS) |
-| dim_macro.gdp_growth | GDPC1 | Real GDP, adjusted for inflation, so growth shows whether the economy actually grew, not just prices |
-| dim_macro_state.unemployment | {ST}UR | Same BLS measure as UNRATE at state level, so national and state unemployment can be compared |
-| dim_macro_state.hpi | {ST}STHPI - FHFA all-transactions, quarterly, not seasonally adjusted | See mismatch below |
+Decision  dim_macro.hpi = HPIPONM226S, FHFA purchase-only, monthly,
+          seasonally adjusted. Built from mortgages Fannie Mae and
+          Freddie Mac bought, so the same kind of homes as the book.
+          Sale prices only.
+          dim_macro.mortgage_rate = MORTGAGE30US. Freddie Mac's own
+          survey, same publisher as the loan data, pricing the same
+          product. The book is 100% fixed-rate.
+          dim_macro.unemployment = UNRATE, the official national rate
+          (BLS).
+          dim_macro.gdp_growth = GDPC1. Real GDP, so growth shows
+          whether the economy grew, not just prices.
+          dim_macro_state.unemployment = {ST}UR. Same BLS measure as
+          UNRATE at state level, so the two can be compared.
+          dim_macro_state.hpi = {ST}STHPI, FHFA all-transactions,
+          quarterly, not seasonally adjusted. A different index from
+          national HPI: it includes refinance appraisals as well as
+          sales. Keep both. The two HPI columns are never compared
+          directly, and any change on state HPI is year-on-year.
+          Revisit in S10.
 
-HPI mismatch, found after the choice and not decided at the time: state HPI is a
-different index from national HPI. It includes refinance appraisals as well as
-sales, it is quarterly not monthly, and it is not seasonally adjusted.
+Rejected  Replacing {ST}STHPI with FHFA's state purchase-only index -
+          not confirmed on FRED, so a second source and a reload, and
+          nothing uses state HPI before S10.
 
-Decision: keep both. The two HPI columns are never compared directly. Any change
-calculated on state HPI uses year-on-year change, because the index is not
-seasonally adjusted. Revisit in S10 when macro features are chosen.
+Cost      National HPI has no state detail. State and national HPI
+          cannot be compared directly.
 
-Rejected: replacing the state series with FHFA's state purchase-only index. It is
-not confirmed on FRED, so it means a second source and a reload, and nothing uses
-state HPI before S10.
+### D-047 | 2026-09-30 | Fact partitions moved from D: to C: - supersedes D-022
 
-## D-047 - Fact partitions moved from D: to C: (30 Sep 2026)
+Context   Read failures ("could not read blocks 0..0 ... Invalid
+          argument") on fact table data in credit_risk_ts (D:): two in
+          S05, one on 28 Sep. D: is a 306 GB partition of a laptop hard
+          disk (Seagate ST1000LM035). C: is a separate Samsung NVMe
+          SSD. Both NTFS, both Healthy. The 48 fact indexes were
+          already on pg_default (C:) - created without a TABLESPACE
+          clause, so they went to the database default. Not decided at
+          the time. Server log, 28 Sep: gate query stopped 16:23,
+          server shut down and restarted at 16:24:29 and 16:24:55. The
+          S06 handoff said no restart. Root cause not found.
 
-Supersedes D-022.
-
-| Evidence | Result |
-|---|---|
-| Read failures | Three, all reading fact table data on credit_risk_ts (D:): two in S05, one on 28 Sep |
-| D: | 306 GB partition of a laptop hard disk (Seagate ST1000LM035), NTFS, Healthy |
-| C: | Separate disk, Samsung NVMe SSD, NTFS, Healthy |
-| Fact indexes | All 48 on pg_default (C:). Created without a TABLESPACE clause, so they went to the database default. Not decided at the time |
-| Server log, 28 Sep | Gate query stopped 16:23. Server shut down and restarted at 16:24:29 and 16:24:55. The S06 handoff said no restart |
-
-Decision: move the 24 fact partitions to pg_default (C:). Every failure was a read
-of table data on D:, and nothing on C: has failed, even though C: holds all 48
-indexes and every dimension table and is read constantly. Root cause not found.
-
-Also: copy D:\Datasets\Raw to C:\Backup\Datasets\Raw so the raw layer is on both
-disks. working/ is rebuilt from Raw and is not copied.
-
-Cost: the S03 throughput figures were measured on the old layout and no longer
-describe the current setup. The move adds about 12 GB to C: against 110 GB free,
-and if C: fails the database can be rebuilt from Raw on D:.
+Decision  sql/10, one transaction: move the 24 fact partitions to
+          pg_default (C:). Every failure was a read of table data on
+          D:, and nothing on C: has
