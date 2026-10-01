@@ -23,7 +23,7 @@ Record of non-obvious decisions, with the reasoning and the date.
 **Context:** Freddie Mac Single Family Loan Performance covers 1999-present.
 Full history is not required; regime coverage is.
 
-**Decision:** Six vintages, selected to span four distinct credit regimes  -
+**Decision:** Six vintages, selected to span four distinct credit regimes -
 bubble-era underwriting (2005-2007), crisis (2008), post-crisis tightening
 (2012), benign (2017).
 
@@ -113,7 +113,7 @@ location. Neon is therefore treated as a generic PostgreSQL endpoint.
 Personal-mode gateway is additionally reported not to work with PostgreSQL
 validation, implying the full standard gateway is required.
 
-**Impact:** Threatens the mandatory Project 1 live-artifact requirement  -
+**Impact:** Threatens the mandatory Project 1 live-artifact requirement -
 a Power BI dashboard published to Service, connected to the Project 0
 PostgreSQL database, on a scheduled monthly refresh.
 
@@ -179,7 +179,7 @@ Three distinct steps were required - install the package, write the config,
 install the git hook - and only the first was done.
 
 **Impact:** Low in practice. A baseline scan confirmed no credentials had been
-committed. Would have been severe had `.env` been created before detection  -
+committed. Would have been severe had `.env` been created before detection -
 `.env` containing the Neon connection string is scheduled for Day 2.
 
 **Remediation:** Config written covering trailing-whitespace, end-of-file,
@@ -598,7 +598,7 @@ Joined on `loan_sequence_number` (present in both source files) and
   wide format avoids a repeated pivot. Long would win if the series list were
   open-ended.
 
-**Why this shape:** the two Freddie Mac files already have this structure  -
+**Why this shape:** the two Freddie Mac files already have this structure -
 origination is one row per loan and never changes after write; performance is
 one row per loan-month and grows monthly. The schema follows the data rather
 than imposing on it.
@@ -645,7 +645,7 @@ Actual ratio: **~29x**, not ~15x.
 **Root cause of the error:** compressed size is not a reliable proxy for row
 count. Compression ratio varies with content, and pipe-delimited text with
 many repeated and empty fields compresses far better than assumed. D-015
-later measured the same 8.2 GB of archives expanding to 62.78 GB on disk  -
+later measured the same 8.2 GB of archives expanding to 62.78 GB on disk -
 a 7.7x expansion.
 
 **Effect on the decision:** none, except to strengthen it. D-002 chose
@@ -695,12 +695,12 @@ field was not the exception, it was the first one looked at. Evidence:
 - **Balances keep `CHECK (>= 0)`** - a position at a point in time cannot be
   negative: `current_actual_upb`, `current_non_interest_bearing_upb`,
   `current_interest_bearing_upb`, `zero_balance_removal_upb`.
-- **Flows carry no sign constraint**, whether or not they failed here  -
+- **Flows carry no sign constraint**, whether or not they failed here -
   reversals, clawbacks and escrow refunds are legitimate servicing activity.
   The remaining eleven money fields.
 
 **Why structural, not "drop the eight that failed."** `mi_recoveries` passed
-and `non_mi_recoveries` failed. Same quantity, same reversal mechanics  -
+and `non_mi_recoveries` failed. Same quantity, same reversal mechanics -
 `mi_recoveries` passed by luck, not by law. Keeping it would record an
 accident rather than a rule, and defer the failure to row 400 million of the
 standard load.
