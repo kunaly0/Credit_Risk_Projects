@@ -1391,7 +1391,7 @@ Context   Read failures ("could not read blocks 0..0 ... Invalid
 
 Decision  sql/10, one transaction: move the 24 fact partitions to
           pg_default (C:). Every failure was a read of table data on
-                    D:, and nothing on C: has failed, even though C: holds all 48
+          D:, and nothing on C: has failed, even though C: holds all 48
           indexes and every dimension table and is read constantly.
           Copy D:\Datasets\Raw to C:\Backup\Datasets\Raw so the raw
           layer is on both disks. working/ is rebuilt from Raw and is
