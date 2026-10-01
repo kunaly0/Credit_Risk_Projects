@@ -1425,3 +1425,32 @@ Follow-up 2026-10-01. The parent table never had a tablespace; each
           the repo could not be rebuilt on another machine. The empty
           tablespace is dropped (sql/11) so nothing lands on D: by
           accident.
+
+### D-048 | 2026-10-01 | SQL build order: every numbered file runs in sequence; earlier files edited only to keep a fresh build working
+
+Context   D-047 moved the fact partitions to C:. sql/03 still placed
+          all 24 on credit_risk_ts, a tablespace no script creates, so
+          it had to be edited (D-047 follow-up). D-042 said applied
+          scripts are never edited, while S03 edited files in place
+          alongside ALTER TABLE on the live database. The repo was
+          following two conventions.
+
+Decision  A fresh build runs every numbered file in sql/ in order
+          (sql/dq and sql/ops are checks, not build steps). A change to
+          the live database goes in a new numbered file. An earlier
+          file is edited only when it would fail on a new machine, and
+          the edit is logged here. First two uses: sql/03 (D-047
+          follow-up) and sql/11, now DROP TABLESPACE IF EXISTS, because
+          on a fresh build the tablespace never existed.
+
+Rejected  Never editing an applied file - the original sql/03 fails on
+          any machine without credit_risk_ts, and no later file can fix
+          a build that stops at 03. Editing files in place for every
+          change - loses the record of what changed on the live
+          database and when.
+
+Cost      Breaks the consistency D-042 promised. A file in sql/ no
+          longer proves exactly what ran on the live database; git
+          history does. sql/01 still holds the S02 CHECKs that sql/09
+          replaces, so the schema is only correct after the whole
+          sequence has run.
