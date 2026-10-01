@@ -1181,6 +1181,10 @@ Cost      Slightly higher battery drain, since drives stay spun up.
           service on each occurrence was the third option and is a
           workaround, not a fix; it was rejected for that reason.
 
+Outcome   2026-10-01. Did not stop the failures: five more followed on
+          18, 24 and 28 Sep. Superseded by D-047, which moved the data
+          off D:.
+
 ### D-040 | 2026-09-17 | Pre-commit hooks routed through python -m
 
 Context   Mid-S04, commits began failing with WinError 4551, "An
@@ -1425,6 +1429,16 @@ Follow-up 2026-10-01. The parent table never had a tablespace; each
           the repo could not be rebuilt on another machine. The empty
           tablespace is dropped (sql/11) so nothing lands on D: by
           accident.
+
+Corrected 2026-10-01. The first failures were on 13-14 Sep, in S04,
+          not S05, and D-039 recorded them as a disk-sleep problem.
+          Its fix on 17 Sep was followed by five more failures, so
+          that diagnosis did not hold.
+
+Added     2026-10-01. D-035 estimated a full standard load at about
+          101 GB, sized for D:. C: has about 98 GB free, so the full
+          load no longer fits here. The validation subset D-035
+          planned (2007Q1 and 2008Q1, about 5 GB) still does.
 
 ### D-048 | 2026-10-01 | SQL build order: every numbered file runs in sequence; earlier files edited only to keep a fresh build working
 

@@ -1,4 +1,3 @@
--- KNOW COLD (the migration pattern)
 -- 09: correct two dim_macro CHECKs from S02.
 -- hpi allowed 0 (a placeholder); gdp_growth +-30 rejected real data (Q3 2020 = +34.86).
 
