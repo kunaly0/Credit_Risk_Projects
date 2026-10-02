@@ -1188,6 +1188,12 @@ Revisit   When Project 4 needs ECL backtested as of past reporting dates.
           Reversible - ALFRED keeps the history, so as-known figures can
           be fetched then.
 
+Corrected 2026-10-02. The pull date is not stored in the tables:
+          dim_macro and dim_macro_state have no such column, and
+          load_fred.py writes nothing to load_audit. Which pull is
+          loaded is recorded only in manifest.json of the pull folder
+          and in docs/lineage.md.
+
 ### D-042 | 2026-09-26 | State macro series stored in a new table, dim_macro_state
 
 Context   S06 adds state unemployment and state HPI. dim_macro (S02,
