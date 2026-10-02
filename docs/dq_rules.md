@@ -1,4 +1,4 @@
-# Data Quality Rules - Project 0, S04
+# Data Quality Rules - Project 0 (S04, S06)
 
 Schema for every rule. Five required labels, two optional.
 Labels are padded to 12 characters; continuation lines indent 12 spaces.
@@ -24,7 +24,7 @@ below are the dated findings from when each rule was first written.
 Eight rules run in src/dq/run_dq_suite.py and persist to dq_results:
   R-03  R-05  R-08  R-09  R-10  R-11  R-13  R-15
 
-The other ten do not, for three different reasons.
+The other twelve do not, for four different reasons.
 
 REPORT-ONLY - these produce a number for a human to read, not a verdict.
 Automating them would persist a result nobody acts on.
@@ -34,6 +34,7 @@ Automating them would persist a result nobody acts on.
   R-16  loan_age repeats
   R-17  loan_age repeats explained by modification
   R-18  does missing DTI predict performance
+  R-19  macro jump flags
 
 AUDIT-TRAIL - these compare the loader's records against the data, not
 the data against itself. They belong to a load run, not a DQ run, and
@@ -44,6 +45,11 @@ should move into the loader when defect #12 is fixed.
 ONE-OFF FINDINGS - established once, not re-measured each run.
   R-04  absolute completeness floor - vantagescore, property_valuation_method
   R-14  missing DTI explained by HARP
+
+LOAD GATE - run by hand after every load_fred.py run or loan reload
+(sql/dq/macro_coverage.sql). Like the audit-trail rules, it belongs to a
+load, not a DQ run.
+  R-20  macro coverage of the loan data
 
 Known limitation: R-03 applies one threshold pair to both fields it
 covers, derived from original_dti_ratio's baseline of 2.62%. credit_score
@@ -276,7 +282,7 @@ Result      13 Sep 2026 - PASS
             0 rows across 299,999 loans. D-020's concern did not
             materialise in the sample
 
-            R-14  Missing DTI is explained by HARP
+R-14  Missing DTI is explained by HARP
 Dimension   Completeness
 Checks      Loans with original_dti_ratio IS NULL, split by harp_indicator
 Threshold   Report only
@@ -396,3 +402,50 @@ Open        CONFOUNDED. Missing-DTI loans are almost entirely 2012 and
 Action      Do NOT impute missing DTI. Missingness separates on the
             outcome by 2.5 percentage points, so a median fill erases a
             real signal. Keep "missing" as its own category
+
+R-19  Macro jump flags
+Dimension   Validity
+Checks      National: month-on-month change in unemployment, and
+            gdp_growth (annualised). State: month-on-month change in
+            unemployment. LAG over each series, per state for state rows
+Threshold   Report only. Flags unemployment moving more than 2 points in
+            one month, and gdp_growth beyond +-20
+Why         2008-09, the worst crisis in the data, moved unemployment at
+            most 0.5 points in a month and GDP no lower than -8.47, so a
+            recession never trips the rule. A move above 2 points or
+            beyond +-20 is either a sudden shock (COVID: +10.4 points in
+            one month) or a load error such as 45.0 stored for 4.5. Both
+            need a person to look. S06 did not record why these numbers
+            were chosen; this check was added 2 Oct 2026.
+Result      28 Sep 2026
+            National Apr-Sep 2020: COVID (unemployment Apr +10.4,
+            Jun -2.2; GDP Q2 -27.98, Q3 +34.86). Real
+            LA 2005-09 +6.4, MS 2005-09 +2.7: Hurricane Katrina. Real
+            LA 2005-12 -5.2: post-Katrina fall. Likely real, not confirmed
+            NC 2008-11 +2.3, PR 2002-02 +2.2: cause not confirmed, kept
+            State flags in 2020: COVID, not reviewed one by one
+Notes       Since D-044 the CHECKs block only impossible values, so
+            unusual but possible values load and this rule is what puts
+            them in front of a person. Misses slow crises - 2008 never
+            flags. A NULL month switches the check off for the month
+            after it (Nov 2025). LAG compares rows, not calendar months,
+            so PR May 2020 is compared with Feb 2020
+Open        Causes of NC 2008-11 and PR 2002-02 not confirmed
+
+R-20  Macro coverage of the loan data
+Dimension   Completeness
+Checks      Anti-join: every distinct loan month against dim_macro, and
+            every loan-month against dim_macro_state on state and month
+Threshold   National: every loan month matched. State: unmatched rows
+            only for GU, VI, and PR in 2020-03 to 2020-04. Any other
+            unmatched state FAILs
+Why         There is no dim_state, so no foreign key (D-042). Nothing in
+            the database checks that macro rows exist for every state and
+            month in the book. This anti-join is the only proof
+Result      28 Sep 2026 - PASS (S06 gate)
+            255 of 255 loan months matched nationally, 2005-01 to 2026-03
+            Unmatched loan-months: GU 6,549, PR 603, VI 926 - about 0.04%
+Notes       A NULL count cannot find these gaps: a missing row has no
+            NULL to count (D-045)
+Open        S10 decides how territory loans are handled in models:
+            national values as a flagged stand-in, or excluded
