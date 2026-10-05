@@ -24,6 +24,7 @@ SELECT current_database() = 'credit_risk' AS is_live \gset
 \ir ../09_fix_dim_macro_checks.sql
 \ir ../10_move_fact_to_pg_default.sql
 \ir ../11_drop_tablespace_credit_risk_ts.sql
+\ir ../12_create_dashboard_views.sql
 
 -- Compare with the live database: 8 tables, 24 partitions, 24 vintages
 SELECT
