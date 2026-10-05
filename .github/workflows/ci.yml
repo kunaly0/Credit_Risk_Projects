@@ -1,0 +1,31 @@
+# Runs on every push: formatting (black), lint (ruff) and unit tests (pytest).
+# No database is needed; the tests cover code that runs without one.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt black ruff pytest
+
+      - name: black
+        run: black --check .
+
+      - name: ruff
+        run: ruff check .
+
+      - name: pytest
+        run: pytest -v

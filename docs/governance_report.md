@@ -30,6 +30,7 @@ is its first test.
 | Load reconciliation | Source file lines against table rows | Both differences come from one out-of-scope loan |
 | Fresh build from the repo | `sql/ops/build_all.sql` on an empty database, 5 Oct | 8 tables, 24 partitions, 24 vintages |
 | Load audit records failed loads | Same file loaded twice into that database, 5 Oct | First load success, second recorded as failed, both with real durations |
+| Automated checks on every push | GitHub Actions runs black, ruff and the unit tests | See the Actions tab on GitHub |
 | CHECK constraints | Real data at load | Blocked bad values. Three limits were set too tight and were corrected (D-031, D-034, D-044) |
 
 ## Controls that did not work
@@ -80,11 +81,14 @@ D-041 said they did. Since FRED revises history, the pull date matters.
 Recorded in `docs/lineage.md`; fix when `load_fred.py` next runs.
 
 **F7 - Low. The loader ignores most of its config file.** Encoding and file
-paths are hard-coded; the config says otherwise. Fix in S07 step 7.
+paths are hard-coded; the config said otherwise. 5 Oct: the config now states
+which keys are read and its encoding matches the loader. Making the loader
+read it is a Project 1 item (#16).
 
-**F8 - Low. `docs/methodology.md` is a generic template.** It refers to a
-prompt as its governing specification and says nothing specific to this
-project. Replace in S07 step 7.
+**F8 - Low. `docs/methodology.md` was a generic template.** It referred to
+a prompt as its governing specification and said nothing specific to this
+project. Deleted 5 Oct; the method is in the README, the decision log and
+this report.
 
 ## Decision log
 
@@ -107,7 +111,8 @@ with a date, never written over it (D-005, D-039, D-041, D-047).
   on F06Q10000685, field lengths at positions 34-35, the sign of
   delinquent_accrued_interest.
 - LendingClub source URL not recorded (D-003).
-- No unit tests yet. S07 step 7.
+- Unit tests cover the date and vintage parsers and the checksum script.
+  The loader and the DQ suite need a database and have no tests yet.
 - No backup off this laptop.
 
 ## Limitations for anyone using this data

@@ -90,7 +90,7 @@ only as a gap in run_id.
 | Field counts in runs 8 and 14 include rows later rejected as out of scope | Run 8 shows 50,000 vantagescore sentinels for 49,999 loans | Fixed for later loads (#14) |
 | rows_loaded is counted in Python, not read back from COPY | The count is the loader's own claim | Defect #4 |
 | FRED loads write nothing to load_audit, and the macro tables have no pull date | Which pull is loaded is known only from manifest.json and this document | Open. D-041 corrected |
-| The loader opens files as UTF-8; config/load_config.yaml says cp1252 and is not read for this | Works for every file so far; a non-ASCII byte would fail the load | S07 step 7 |
+| The loader hard-codes UTF-8 and does not read the encoding from config/load_config.yaml | Works for every file so far; a non-ASCII byte would fail the load | Config corrected 5 Oct; loader reading it is Project 1 (#16) |
 | FRED values are the latest revision, not as first published | Backtests use figures nobody had at the time | D-041 |
 | Raw PDFs and the provenance CSVs inside Raw have no checksums | Their integrity is not checked | Minor |
 

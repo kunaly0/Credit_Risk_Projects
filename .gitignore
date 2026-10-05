@@ -37,7 +37,7 @@ Thumbs.db
 *.log
 
 # Local working files
-Scratch/
+scratch/
 docs/PHASE1_BLUEPRINT.md
 
 # Project data - keep the directory structure, not the contents

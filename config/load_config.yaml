@@ -6,9 +6,16 @@
 # Requires: dim_vintage seeded (sql/05). Load order dim_loan -> fact.
 # Gotcha: all values read as text and converted explicitly in Python.
 #   No dtype inference. Dates are YYYYMM and must be parsed (D-026).
+#
+# What the loader reads (checked 5 Oct 2026): only
+#   file_types.<type>.source_columns. The rest of this file describes the
+#   source files and is NOT read. src/etl/loader.py hard-codes the
+#   sentinels (ORIG_SENTINELS, PERF_SENTINELS), the '|' split and the
+#   UTF-8 encoding, and the caller passes the file path. Making the loader
+#   read this file is a Project 1 item (known defect #16).
 
 defaults:
-  encoding: cp1252
+  encoding: utf-8      # what loader.py uses; all 12 sample files loaded with it
   delimiter: "|"
 
 datasets:

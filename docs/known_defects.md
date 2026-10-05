@@ -9,7 +9,7 @@ Carried across sections. Append, don't delete — a fixed defect gets marked, no
 | 3 | Timing printed, not stored | open | Needs a column on load_audit |
 | 4 | rows_loaded counted in Python | open | Not read back from the COPY result |
 | 5 | Interest-rate check is upper-bound only | open | A negative rate would fail the load rather than be nulled |
-| 6 | Dead code in loader.py | open | count_rows, read_first_rows. The latter hardcodes fields[19] |
+| 6 | Dead code in loader.py | fixed 5 Oct | count_rows, read_first_rows. The latter hardcodes fields[19]. Both removed |
 | 7 | Indexes built before the bulk load | accepted | More fragmented than a rebuild. Not worth fixing at this scale |
 | 8 | No .pgpass | open | Four password prompts per rebuild |
 | 9 | No CHECK on maturity vs first payment date | accepted | Omitted per D-020. R-13 tested it: 0 violations in 299,999 loans |
@@ -19,6 +19,7 @@ Carried across sections. Append, don't delete — a fixed defect gets marked, no
 | 13 | Smart App Control blocks unsigned executables | partly fixed | See below |
 | 14 | Rows rejected as out of scope still counted in load_audit_field | fixed 5 Oct | Sentinels and out-of-range values were counted before the scope check. Found while testing #1. Run 8 shows 50,000 vantagescore sentinels for the 49,999 loans loaded. Runs 8 and 14 are the only loads with rejected rows. The scope check now comes first; the test load gave 49,999 |
 | 15 | DQ run_id is MAX(run_id) + 1 | accepted | Two suite runs started at the same moment could share a run_id. One person runs the suite by hand |
+| 16 | load_config.yaml mostly not read by the loader | open | Only source_columns is read; sentinels, encoding and paths are hard-coded. The file's header now says so. Project 1 |
 
 **12 — TRUNCATE is not audited.** load_audit records rows added, because the loader adds them. It records no removals, because TRUNCATE is run separately in psql. The 2017 performance file was reloaded three times during S03 throughput measurement, each preceded by a TRUNCATE — deliberate, since reloading needs the partition cleared. R-01 now fails: audit says 28,260,469 rows, table holds 19,859,812. Fix is either a loader function that truncates and logs together, or R-01 reconciling against the live table. Not fixed by deleting audit rows.
 

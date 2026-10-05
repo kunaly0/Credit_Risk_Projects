@@ -36,32 +36,20 @@ PERF_SENTINELS = {
 }
 
 
-def count_rows(path: str) -> int:
-    total = 0
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            total += 1
-    return total
-
-
-def read_first_rows(path: str, limit: int) -> None:
-    with open(path, encoding="utf-8") as f:
-        count = 0
-        for line in f:
-            fields = line.rstrip("\n").split("|")
-            print(len(fields), fields[19])
-            count += 1
-            if count >= limit:
-                break
-
-
 def blank_to_none(value: str) -> str | None:
+    """Return None for an empty field, so it loads as NULL."""
     if value == "":
         return None
     return value
 
 
 def transform_orig_row(fields: list[str], counts: dict) -> tuple:
+    """Turn one origination line into a dim_loan row.
+
+    Sentinel codes become NULL and are counted per field in counts. The two
+    date fields are parsed from YYYYMM (D-026). vintage_code is derived from
+    the loan ID and appended as the last value.
+    """
     results = []
     for i, value in enumerate(fields):
         name = orig_columns[i]
@@ -79,6 +67,7 @@ def transform_orig_row(fields: list[str], counts: dict) -> tuple:
 
 
 def get_connection() -> psycopg.Connection:
+    """Open a connection to the database named in .env (or the environment)."""
     load_dotenv()
     return psycopg.connect(
         host=os.getenv("DB_HOST"),
@@ -141,6 +130,11 @@ def write_field_metrics(
 
 
 def load_origination(path: str) -> dict:
+    """Load one origination file into dim_loan and record the run in load_audit.
+
+    Rows outside the 24 vintages in dim_vintage are skipped and counted
+    (D-033). Returns the sentinel counts per field.
+    """
     counts = {}
     rows_read = 0
     rows_loaded = 0
@@ -182,6 +176,12 @@ def load_origination(path: str) -> dict:
 
 
 def transform_perf_row(fields: list[str], counts: dict, range_counts: dict) -> tuple:
+    """Turn one performance line into a fact_loan_performance row.
+
+    As transform_orig_row, plus: current_interest_rate above 30 becomes NULL
+    (D-032) and negative months_to_maturity is counted (D-034), both in
+    range_counts.
+    """
     results = []
     for i, value in enumerate(fields):
         name = perf_columns[i]
@@ -210,6 +210,11 @@ def transform_perf_row(fields: list[str], counts: dict, range_counts: dict) -> t
 
 
 def load_performance(path: str) -> dict:
+    """Load one performance file into fact_loan_performance and record the run.
+
+    Same audit pattern and scope rule as load_origination. Prints the rows
+    per second. Returns the sentinel counts per field.
+    """
     started = time.perf_counter()
     counts = {}
     range_counts = {}
