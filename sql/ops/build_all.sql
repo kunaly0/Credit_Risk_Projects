@@ -1,16 +1,18 @@
 -- build_all.sql - build the schema from nothing by running every numbered
 -- file in sql/ in order (D-048). For a new, empty database only: sql/01
--- starts by dropping tables. Refuses to run against credit_risk.
+-- starts by dropping tables, so it refuses to run on a database that
+-- already has tables in it, whatever the database is called.
 --
 -- Usage, from the repo root:
 --   psql -h localhost -U postgres -d <new database> -f sql/ops/build_all.sql
--- Then load data with src/etl/loader.py and src/macro/load_fred.py.
+-- Then load data with scripts/load_sample.py and src/macro/load_fred.py
+-- (README, "Reproduce it").
 
 \set ON_ERROR_STOP on
 
-SELECT current_database() = 'credit_risk' AS is_live \gset
-\if :is_live
-    DO $$ BEGIN RAISE EXCEPTION 'build_all.sql must not run against credit_risk'; END $$;
+SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public') AS has_tables \gset
+\if :has_tables
+    DO $$ BEGIN RAISE EXCEPTION 'build_all.sql runs only on an empty database'; END $$;
 \endif
 
 \ir ../01_create_dimensions.sql
