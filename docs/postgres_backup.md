@@ -21,6 +21,7 @@
 | Date | File | Size | Dump | Restore | Result |
 |---|---|---|---|---|---|
 | 2026-10-01 | credit_risk_20261001_161012.dump | 305 MB | 1.3 min | 3.9 min | 8 of 8 tables match; fact_loan_performance 19,859,812 |
+| 2026-10-05 | credit_risk_20261005_172608.dump | 305 MB | - | not repeated | S07 close. Same procedure as the 1 Oct restore test |
 
 ## Not covered
 

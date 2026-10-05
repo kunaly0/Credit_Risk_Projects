@@ -6,7 +6,7 @@ Carried across sections. Append, don't delete — a fixed defect gets marked, no
 |---|--------|--------|-------|
 | 1 | Audit row rolls back with a failed load | fixed 5 Oct | 4 failed S03 runs left no trace — run_ids 2, 3, 7, 13 are gaps. Handoff said 6; live table says 4. Fixed in dq_results via separate connection (D-037). Fixed in the loader 5 Oct the same way: start_audit and finish_audit run on their own connections. Tested by loading a file twice into a fresh database; the second load is recorded as failed. Past gaps stay |
 | 2 | load_origination timestamps use `now()` | fixed 5 Oct | Durations read 00:00:00. Only load_performance got perf_counter. Fixed with #1: started_at and finished_at now come from separate transactions (test load: 1.3 s). Past runs still read 00:00:00 |
-| 3 | Timing printed, not stored | open | Needs a column on load_audit |
+| 3 | Timing printed, not stored | fixed 5 Oct | Needs a column on load_audit. Resolved by #2: started_at and finished_at are now real, so duration is finished_at - started_at |
 | 4 | rows_loaded counted in Python | open | Not read back from the COPY result |
 | 5 | Interest-rate check is upper-bound only | open | A negative rate would fail the load rather than be nulled |
 | 6 | Dead code in loader.py | fixed 5 Oct | count_rows, read_first_rows. The latter hardcodes fields[19]. Both removed |
@@ -14,7 +14,7 @@ Carried across sections. Append, don't delete — a fixed defect gets marked, no
 | 8 | No .pgpass | open | Four password prompts per rebuild |
 | 9 | No CHECK on maturity vs first payment date | accepted | Omitted per D-020. R-13 tested it: 0 violations in 299,999 loans |
 | 10 | net_sales_proceeds 'U' sentinel never exercised | open | 0 occurrences across six vintages |
-| 11 | idx_fact_perf_period value assumed, not measured | open | S04 queries are the first real workload against it |
+| 11 | idx_fact_perf_period value assumed, not measured | closed in S05 | S04 queries are the first real workload against it. S05 EXPLAIN ANALYZE: index-only scan, 0 heap fetches, 186 buffers read against a 3,407 MB table. The index is justified |
 | 12 | TRUNCATE is not audited | open | See below |
 | 13 | Smart App Control blocks unsigned executables | partly fixed | See below |
 | 14 | Rows rejected as out of scope still counted in load_audit_field | fixed 5 Oct | Sentinels and out-of-range values were counted before the scope check. Found while testing #1. Run 8 shows 50,000 vantagescore sentinels for the 49,999 loans loaded. Runs 8 and 14 are the only loads with rejected rows. The scope check now comes first; the test load gave 49,999 |

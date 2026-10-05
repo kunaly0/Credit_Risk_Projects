@@ -1422,3 +1422,26 @@ Cost      Breaks the consistency D-042 promised. A file in sql/ no
           history does. sql/01 still holds the S02 CHECKs that sql/09
           replaces, so the schema is only correct after the whole
           sequence has run.
+
+### D-049 | 2026-10-05 | Project 0 closed with documented exceptions and deferrals
+
+Context   Project 0 was planned at about a month and took 45 days. The
+          S07 review lists, mine and an outside one, still had items
+          left. Job applications are planned for mid-November, and
+          interviews ask about what is on the resume, not every file.
+
+Decision  Close Project 0 at S07. Gate PASS with two exceptions: a full
+          12-file reload into a fresh database was not re-run (the schema
+          build and a one-file load were), and load_config.yaml lists
+          settings the loader does not read (#16). Deferred to Project 1:
+          the loader reading its config, splitting the loader into
+          modules, a second dashboard page, checking the S00 Streamlit
+          app, the full reload test, restyling D-001 to D-035.
+
+Rejected  Finishing every review item first - about a week more, for work
+          that is not on the resume and does not change what Project 1
+          builds on.
+
+Cost      Two exceptions stay open, and the deferred items must be picked
+          up when Project 1 touches that code or they will be forgotten.
+          The S07 to S08 handoff lists them.

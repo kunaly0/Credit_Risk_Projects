@@ -107,7 +107,7 @@ section they belong to.
 
 | Document | What it holds |
 |---|---|
-| [Decision log](docs/DECISIONS.md) | 48 decisions, including incidents and what changed because of them |
+| [Decision log](docs/DECISIONS.md) | 49 decisions, including incidents and what changed because of them |
 | [DQ rules](docs/dq_rules.md) | The 20 rules, their thresholds and results |
 | [Lineage](docs/lineage.md) | From raw file to table, and what the lineage cannot show |
 | [Governance report](docs/governance_report.md) | Controls tested, findings, open items, limitations |
@@ -131,8 +131,7 @@ tests/        unit tests, run on every push
 Built with PostgreSQL 18, Python 3.13 (psycopg 3, pandas), Power BI Desktop and
 GitHub Actions.
 
-Built with AI assistance for code drafting and review. Design decisions, data
-checks and findings are my own.
+The schema, the data quality SQL and the decisions in the log are my own work. The larger Python scripts (the FRED loader, the checksum and sample-load scripts, the tests) were written with AI assistance and reviewed by me.
 
 ## Licence
 
