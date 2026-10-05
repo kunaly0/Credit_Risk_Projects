@@ -69,7 +69,8 @@ Line counts per file are in docs/row_counts_baseline.csv.
 ## Missing load runs
 
 load_audit has no runs 2, 3, 7 or 13. A failed load rolled back its own
-audit row (defect #1), so each one exists only as a gap in run_id.
+audit row (defect #1, fixed for later loads on 5 Oct), so each one exists
+only as a gap in run_id.
 
 | Run | File | Failed on | Decision |
 |---|---|---|---|
@@ -83,9 +84,10 @@ audit row (defect #1), so each one exists only as a gap in run_id.
 | Gap | Effect | Status |
 |---|---|---|
 | Raw zips are extracted to Working by hand, with no script and no checksums on the extracted files | Working files are tied to Raw only by line counts, not content | Open |
-| Failed loads leave no audit row | Runs 2, 3, 7 and 13 are known only as gaps | Defect #1 |
+| Failed loads before 5 Oct left no audit row | Runs 2, 3, 7 and 13 are known only as gaps | Fixed for later loads (#1) |
 | TRUNCATE is not logged | The audit cannot say which of runs 16-19 is in the table | Defect #12 |
-| load_audit times come from now(), the transaction start | Durations read 00:00:00 | Defect #2 |
+| load_audit times before 5 Oct came from one transaction | Past durations read 00:00:00 | Fixed for later loads (#2) |
+| Field counts in runs 8 and 14 include rows later rejected as out of scope | Run 8 shows 50,000 vantagescore sentinels for 49,999 loans | Fixed for later loads (#14) |
 | rows_loaded is counted in Python, not read back from COPY | The count is the loader's own claim | Defect #4 |
 | FRED loads write nothing to load_audit, and the macro tables have no pull date | Which pull is loaded is known only from manifest.json and this document | Open. D-041 corrected |
 | The loader opens files as UTF-8; config/load_config.yaml says cp1252 and is not read for this | Works for every file so far; a non-ASCII byte would fail the load | S07 step 7 |
@@ -99,4 +101,5 @@ audit row (defect #1), so each one exists only as a gap in run_id.
 | Raw files unchanged | `python scripts/verify_raw_checksums.py`, then again with `--root C:\Backup\Datasets` |
 | Row counts | `sql/ops/table_row_counts.sql`, compared with this document |
 | Macro coverage | `sql/dq/macro_coverage.sql` (R-20) |
+| Schema builds from nothing | `psql -d <new database> -f sql/ops/build_all.sql` |
 | DQ rules | `python src/dq/run_dq_suite.py` |

@@ -89,6 +89,57 @@ def get_connection() -> psycopg.Connection:
     )
 
 
+def start_audit(source_file: str, target_table: str) -> int:
+    """Write the audit row for a load before any data moves, and return its run_id.
+
+    The row is committed on its own connection, so a load that fails later
+    cannot roll it back (defect #1). Same pattern as dq_results (D-037).
+    A row still marked 'running' after a load means the process died before
+    it could record the outcome.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO load_audit "
+                "(source_file, target_table, started_at, status) "
+                "VALUES (%s, %s, now(), 'running') RETURNING run_id",
+                (source_file, target_table),
+            )
+            return cur.fetchone()[0]
+
+
+def finish_audit(run_id: int, status: str, rows_read: int, rows_loaded: int) -> None:
+    """Record how a load ended, on its own connection.
+
+    Runs after the data transaction has committed or rolled back. now() is
+    the start of this short transaction, so finished_at minus started_at is
+    the real duration of the load (defect #2).
+    """
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE load_audit SET finished_at = now(), rows_read = %s, "
+            "rows_loaded = %s, status = %s WHERE run_id = %s",
+            (rows_read, rows_loaded, status, run_id),
+        )
+
+
+def write_field_metrics(
+    cur: psycopg.Cursor, run_id: int, metric_type: str, values: dict
+) -> None:
+    """Write one load_audit_field row per field with a count above zero.
+
+    Called inside the data transaction, so the counts are kept only if the
+    rows they describe are kept.
+    """
+    for field_name, value in values.items():
+        cur.execute(
+            "INSERT INTO load_audit_field "
+            "(run_id, field_name, metric_type, metric_value) "
+            "VALUES (%s, %s, %s, %s)",
+            (run_id, field_name, metric_type, value),
+        )
+
+
 def load_origination(path: str) -> dict:
     counts = {}
     rows_read = 0
@@ -97,53 +148,36 @@ def load_origination(path: str) -> dict:
     columns = ", ".join(orig_columns + ["vintage_code"])
     sql = f"COPY dim_loan ({columns}) FROM STDIN"
 
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO load_audit "
-                "(source_file, target_table, started_at, status) "
-                "VALUES (%s, %s, now(), 'running') RETURNING run_id",
-                (path, "dim_loan"),
-            )
-            run_id = cur.fetchone()[0]
-            cur.execute("SELECT vintage_code FROM dim_vintage")
-            valid_vintages = set()
-            for row in cur.fetchall():
-                valid_vintages.add(row[0])
+    run_id = start_audit(path, "dim_loan")
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT vintage_code FROM dim_vintage")
+                valid_vintages = set()
+                for row in cur.fetchall():
+                    valid_vintages.add(row[0])
 
-            with cur.copy(sql) as copy:
-                with open(path, encoding="utf-8") as f:
-                    for line in f:
-                        rows_read += 1
-                        fields = line.rstrip("\n").split("|")
-                        row = transform_orig_row(fields, counts)
-                        if row[-1] not in valid_vintages:
-                            scope_counts[row[-1]] = scope_counts.get(row[-1], 0) + 1
-                            continue
-                        copy.write_row(row)
-                        rows_loaded += 1
+                with cur.copy(sql) as copy:
+                    with open(path, encoding="utf-8") as f:
+                        for line in f:
+                            rows_read += 1
+                            fields = line.rstrip("\n").split("|")
+                            # Scope first, so a rejected row adds nothing to the
+                            # field counts that R-02 reconciles against the table
+                            vintage = vintage_from_loan_id(fields[19])
+                            if vintage not in valid_vintages:
+                                scope_counts[vintage] = scope_counts.get(vintage, 0) + 1
+                                continue
+                            row = transform_orig_row(fields, counts)
+                            copy.write_row(row)
+                            rows_loaded += 1
 
-            for field_name, value in counts.items():
-                cur.execute(
-                    "INSERT INTO load_audit_field "
-                    "(run_id, field_name, metric_type, metric_value) "
-                    "VALUES (%s, %s, 'sentinel_null', %s)",
-                    (run_id, field_name, value),
-                )
-
-            for field_name, value in scope_counts.items():
-                cur.execute(
-                    "INSERT INTO load_audit_field "
-                    "(run_id, field_name, metric_type, metric_value) "
-                    "VALUES (%s, %s, 'out_of_scope', %s)",
-                    (run_id, field_name, value),
-                )
-
-            cur.execute(
-                "UPDATE load_audit SET finished_at = now(), rows_read = %s, "
-                "rows_loaded = %s, status = 'success' WHERE run_id = %s",
-                (rows_read, rows_loaded, run_id),
-            )
+                write_field_metrics(cur, run_id, "sentinel_null", counts)
+                write_field_metrics(cur, run_id, "out_of_scope", scope_counts)
+    except BaseException:  # BaseException so Ctrl+C is recorded too
+        finish_audit(run_id, "failed", rows_read, 0)
+        raise
+    finish_audit(run_id, "success", rows_read, rows_loaded)
     return counts
 
 
@@ -185,61 +219,37 @@ def load_performance(path: str) -> dict:
     columns = ", ".join(perf_columns + ["vintage_code"])
     sql = f"COPY fact_loan_performance ({columns}) FROM STDIN"
 
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO load_audit "
-                "(source_file, target_table, started_at, status) "
-                "VALUES (%s, %s, now(), 'running') RETURNING run_id",
-                (path, "fact_loan_performance"),
-            )
-            run_id = cur.fetchone()[0]
-            cur.execute("SELECT vintage_code FROM dim_vintage")
-            valid_vintages = set()
-            for row in cur.fetchall():
-                valid_vintages.add(row[0])
+    run_id = start_audit(path, "fact_loan_performance")
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT vintage_code FROM dim_vintage")
+                valid_vintages = set()
+                for row in cur.fetchall():
+                    valid_vintages.add(row[0])
 
-            with cur.copy(sql) as copy:
-                with open(path, encoding="utf-8") as f:
-                    for line in f:
-                        rows_read += 1
-                        fields = line.rstrip("\n").split("|")
-                        row = transform_perf_row(fields, counts, range_counts)
-                        if row[-1] not in valid_vintages:
-                            scope_counts[row[-1]] = scope_counts.get(row[-1], 0) + 1
-                            continue
-                        copy.write_row(row)
-                        rows_loaded += 1
+                with cur.copy(sql) as copy:
+                    with open(path, encoding="utf-8") as f:
+                        for line in f:
+                            rows_read += 1
+                            fields = line.rstrip("\n").split("|")
+                            # Scope first, so a rejected row adds nothing to the
+                            # field counts that R-02 reconciles against the table
+                            vintage = vintage_from_loan_id(fields[0])
+                            if vintage not in valid_vintages:
+                                scope_counts[vintage] = scope_counts.get(vintage, 0) + 1
+                                continue
+                            row = transform_perf_row(fields, counts, range_counts)
+                            copy.write_row(row)
+                            rows_loaded += 1
 
-            for field_name, value in counts.items():
-                cur.execute(
-                    "INSERT INTO load_audit_field "
-                    "(run_id, field_name, metric_type, metric_value) "
-                    "VALUES (%s, %s, 'sentinel_null', %s)",
-                    (run_id, field_name, value),
-                )
-
-            for field_name, value in range_counts.items():
-                cur.execute(
-                    "INSERT INTO load_audit_field "
-                    "(run_id, field_name, metric_type, metric_value) "
-                    "VALUES (%s, %s, 'out_of_range', %s)",
-                    (run_id, field_name, value),
-                )
-
-            for field_name, value in scope_counts.items():
-                cur.execute(
-                    "INSERT INTO load_audit_field "
-                    "(run_id, field_name, metric_type, metric_value) "
-                    "VALUES (%s, %s, 'out_of_scope', %s)",
-                    (run_id, field_name, value),
-                )
-
-            cur.execute(
-                "UPDATE load_audit SET finished_at = now(), rows_read = %s, "
-                "rows_loaded = %s, status = 'success' WHERE run_id = %s",
-                (rows_read, rows_loaded, run_id),
-            )
+                write_field_metrics(cur, run_id, "sentinel_null", counts)
+                write_field_metrics(cur, run_id, "out_of_range", range_counts)
+                write_field_metrics(cur, run_id, "out_of_scope", scope_counts)
+    except BaseException:  # BaseException so Ctrl+C is recorded too
+        finish_audit(run_id, "failed", rows_read, 0)
+        raise
+    finish_audit(run_id, "success", rows_read, rows_loaded)
     elapsed = time.perf_counter() - started
     print(
         f"{rows_loaded} rows in {elapsed:.1f}s = {rows_loaded / elapsed:.0f} rows/sec"

@@ -1,6 +1,6 @@
 # Governance report - Project 0
 
-2 October 2026. Covers S00 to S07: data acquisition, schema, load, data
+2 October 2026, updated 5 October. Covers S00 to S07: data acquisition, schema, load, data
 quality, macro data and the controls around them.
 
 The data and the code held up. Raw files match their checksums on both
@@ -28,6 +28,8 @@ is its first test.
 | DQ suite, 8 automated rules | Run 13 after the disk move compared with run 12 before it | Identical |
 | Macro coverage gate (R-20) | Anti-join of every loan month against the macro tables, 28 Sep | 255 of 255 months |
 | Load reconciliation | Source file lines against table rows | Both differences come from one out-of-scope loan |
+| Fresh build from the repo | `sql/ops/build_all.sql` on an empty database, 5 Oct | 8 tables, 24 partitions, 24 vintages |
+| Load audit records failed loads | Same file loaded twice into that database, 5 Oct | First load success, second recorded as failed, both with real durations |
 | CHECK constraints | Real data at load | Blocked bad values. Three limits were set too tight and were corrected (D-031, D-034, D-044) |
 
 ## Controls that did not work
@@ -37,7 +39,7 @@ is its first test.
 | Project Knowledge refreshed at every section close (D-018) | Never refreshed. It still describes the project as of 23 Aug. The S04 section pack was never uploaded | Refresh at S07 close |
 | Incidents recorded in handoffs | 3 of 12 read failures were recorded. The S06 handoff said the server was not restarted; its log shows two restarts | Incidents now taken from the server log |
 | Disk sleep fix for the read failures (D-039) | Five more failures followed | Superseded by D-047 |
-| Load audit | Failed loads leave no row, and TRUNCATE is not logged, so the audit total does not match the table (R-01 fails) | Open, defects #1 and #12 |
+| Load audit | Failed loads left no row, and TRUNCATE is not logged, so the audit total does not match the table (R-01 fails) | Failed loads fixed 5 Oct (#1). TRUNCATE still open (#12) |
 | Exposed FRED key "monitored" (D-005) | Nothing monitored it | Key rotated 1 Oct; closed |
 
 ## Findings
@@ -47,7 +49,8 @@ partitions used a tablespace that was created by hand and never scripted, so
 `sql/03` would fail on any other machine. The 48 fact indexes had also
 landed on C: without anyone deciding it. Fixed 1 Oct: the partitions use
 the default tablespace, the old one is dropped, and D-048 sets the rule for
-keeping a fresh build working.
+keeping a fresh build working. Verified 5 Oct: `sql/ops/build_all.sql`
+builds the full schema on an empty database.
 
 **F2 - High. The fact data sat on a disk with unexplained read failures.**
 Twelve failures between 13 and 28 Sep, all on D:, all on the first block of
@@ -66,7 +69,11 @@ checked. Open until S07 close.
 **F5 - Medium. The load audit cannot explain the table on its own.** Runs
 2, 3, 7 and 13 exist only as gaps, and the audit cannot say which of four
 2017 loads is in the table. The lineage document explains each gap from the
-decision log. Open, defects #1 and #12.
+decision log. Fixed 5 Oct for future loads: a failed load now leaves a
+'failed' row with real timings (#1, #2). Testing the fix found that rows
+rejected as out of scope were still added to the field counts; fixed the
+same day (#14). Past runs are unchanged, and TRUNCATE is still not logged
+(#12).
 
 **F6 - Medium. The macro tables do not record which FRED pull they hold.**
 D-041 said they did. Since FRED revises history, the pull date matters.
@@ -89,7 +96,7 @@ with a date, never written over it (D-005, D-039, D-041, D-047).
 
 ## Open items carried into Project 1
 
-- Load audit defects #1, #2, #4 and #12 (`docs/known_defects.md`).
+- Load audit defects #4 and #12 (`docs/known_defects.md`).
 - FRED pull not recorded in the database (F6).
 - Territory loans (GU, VI, PR) have no state macro data. S10 decides whether
   to use national values or exclude them.
