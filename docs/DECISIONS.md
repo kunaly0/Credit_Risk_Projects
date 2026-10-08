@@ -1445,3 +1445,47 @@ Rejected  Finishing every review item first - about a week more, for work
 Cost      Two exceptions stay open, and the deferred items must be picked
           up when Project 1 touches that code or they will be forgotten.
           The S07 to S08 handoff lists them.
+
+### D-050 | 2026-10-08 | PD default definition: 90+ days past due or a credit event
+
+Context   Project 1 needs a 1/0 default label for every loan, and every
+          later number (PD, AUC, calibration, IFRS 9 Stage 3) is
+          measured against it. Freddie Mac has no default field. A
+          whole-history sizing query over 299,999 loans found 30,191
+          ever 90+ days past due, 22,885 ever 180+, 14,023 ending in a
+          loss exit (zero balance code 02, 03, 09, 15) and 10,241 ever
+          modified.
+
+Decision  A loan defaults in the first month any of these happens:
+          delinquency status 03 or worse (90+ days past due), status
+          RA (house repossessed), zero balance code 02, 03, 09 or 15
+          (house sold at a loss), or a modification. 90 days because
+          it catches trouble early and is the Basel, IFRS 9 and RBI
+          standard. Loss exits count because the bank lost money,
+          however far behind the borrower was - 110 loans ended this
+          way without reaching 90 days. A modification counts because
+          the borrower accepted it knowing trouble was coming, and the
+          bank accepted less than the original deal - 503 loans were
+          modified without reaching 90 days. RA counts because the
+          bank took the house - 6 loans. XX (not available) is never a
+          default.
+
+Rejected  180+ days past due - finds trouble late and goes against the
+          90-day standard, with nothing in the data to justify it.
+          Codes 96 (seller buyback for a defect) and 16 (reperforming
+          loan sold) as default - the bank lost no money and the
+          borrower did not fail to pay; the lender's mistake or Freddie
+          Mac's own decision ended the loan. Buybacks and sales that
+          reached 90 days first (1,045 and 3,663) are already defaults
+          under the 90-day rule. The 539 that did not are not.
+
+Cost      Counts borrowers who reached 90 days and then caught up. PD
+          is higher because of them; LGD (Project 2) treats them as
+          defaults with no loss, so expected loss is not overstated.
+          S20 checks that the model ranks loans the same way under a
+          180-day target. The 539 loans with 96 or 16 left the data
+          early and their outcome is unknown - handled with the other
+          early exits in S08 Step 3. Bankruptcy and most unlikely-to-pay
+          signs are not in the data, so the definition follows Basel
+          only as far as Freddie Mac discloses. All counts are whole
+          history; the time window (S08 Step 2) will change them.
