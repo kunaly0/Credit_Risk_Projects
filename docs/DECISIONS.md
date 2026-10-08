@@ -1489,3 +1489,40 @@ Cost      Counts borrowers who reached 90 days and then caught up. PD
           signs are not in the data, so the definition follows Basel
           only as far as Freddie Mac discloses. All counts are whole
           history; the time window (S08 Step 2) will change them.
+
+### D-051 | 2026-10-08 | PD performance window: 24 months from first payment
+
+Context   D-050 defines default but not when. "Ever defaulted" is not
+          comparable across vintages: data ends 2026-03, so 2005 loans
+          have about 20 years of history and 2017 loans about 8. A
+          sizing query on the D-050 definition gave default rates by
+          vintage for 12, 24 and 36 months. At 24 months: 2005 1.1%,
+          2006 2.0%, 2007 5.0%, 2008 4.1%, 2012 0.6%, 2017 0.8%.
+
+Decision  Every loan is watched for the same 24 months, starting at
+          its first payment date (the point the loan is approved and
+          scored). Target = 1 if the D-050 default month falls before
+          first_payment_date + 24 months, otherwise 0. 24 months is a
+          common window for mortgage scorecards. It still covers the
+          2008 crisis through the 2007 and 2008 vintages, the two
+          highest rates. It ends before COVID for all but 80 loans,
+          and gives about 6,800 defaults, enough to build on. Every
+          vintage has a complete 24-month window.
+
+Rejected  12 months - too few defaults (2012 has about 100 in 50,000
+          loans). 36 months - the window of 45,705 of 50,000 loans
+          from 2017 reaches March 2020 or later, and the 2017 rate
+          jumps from 0.8% to 3.4%, most likely COVID payment holidays
+          reported as missed payments. It would need a separate COVID
+          fix and another judgment call. 60 months - the label would
+          mostly record which loans lived through 2008 or COVID rather
+          than borrower risk, more loans would pay off before the
+          window ends, and in a bank the newest training loans would
+          be at least 5 years old.
+
+Cost      Defaults after month 24 are not counted. 2005 loans went bad
+          mostly in 2008-2010, so 2005 shows 1.1% at 24 months against
+          11.2% over its whole life. Basel and IFRS 9 Stage 1 need a
+          1-year PD, so the 24-month PD is converted in S14. The 80
+          loans whose window reaches March 2020 are handled in S08
+          Step 4.
