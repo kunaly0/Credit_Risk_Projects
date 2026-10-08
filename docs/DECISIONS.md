@@ -1526,3 +1526,32 @@ Cost      Defaults after month 24 are not counted. 2005 loans went bad
           1-year PD, so the 24-month PD is converted in S14. The 80
           loans whose window reaches March 2020 are handled in S08
           Step 4.
+
+### D-052 | 2026-10-08 | Early leavers: paid-off loans kept as 0, buybacks excluded
+
+Context   Under D-051 every loan is watched for 24 months, but some
+          leave earlier without defaulting. A query on the D-050 and
+          D-051 rules found 57,583 paid off (code 01), 309 bought back
+          by the seller (code 96) and none sold as reperforming (code
+          16) inside their first 24 months. Paid off early by vintage:
+          2005 7,133, 2006 9,238, 2007 11,925, 2008 17,194, 2012
+          5,234, 2017 6,859.
+
+Decision  Paid-off loans stay in the sample as 0. Dropping them would
+          make the default rate misleadingly high - 2008 would go from
+          4.1% to 6.2% - and a paid-off loan cannot default any more,
+          so its outcome is known. Buybacks inside the window are
+          excluded. The loan still exists with the original lender and
+          could still default, so a 0 would say it will not, which is
+          not known. Model population: 299,690 loans, 6,708 defaults.
+
+Rejected  Dropping paid-off loans - raises the default rate, and at
+          application the bank scores everyone without knowing who
+          will pay off early. Keeping buybacks as 0 - records an
+          unknown outcome as good.
+
+Cost      Defects are often found after a loan starts going wrong, so
+          the 309 excluded buybacks may be riskier than average and
+          excluding them can pull the default rate down slightly. At
+          most 309 loans, about 0.1% of the sample. Reporting gaps
+          inside the window (R-15) are checked next.
