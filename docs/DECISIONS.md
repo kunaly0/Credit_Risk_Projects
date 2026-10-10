@@ -1555,3 +1555,37 @@ Cost      Defects are often found after a loan starts going wrong, so
           excluding them can pull the default rate down slightly. At
           most 309 loans, about 0.1% of the sample. Reporting gaps
           inside the window (R-15) are checked next.
+
+### D-053 | 2026-10-10 | Late-start loans excluded: only loans seen from their first payment
+
+Context   D-051 watches each loan for its first 24 months, which
+          assumes the data starts at the first payment. Comparing each
+          loan's first reporting month with first_payment_date:
+          260,989 start one month before the first payment, 23,573 in
+          the first payment month, 13,659 start 1-23 months late,
+          1,766 start 24 or more months late and 12 start two or more
+          months early. The User Guide says the dataset includes loans
+          seasoned before Freddie Mac bought them, and converted or
+          seller-modified loans reported with a reset first payment
+          date. S03 reconciled the load to the source files, so the
+          missing months were never published. Reporting gaps (R-15)
+          were also checked: 7 loans have a gap inside the window and
+          all 7 are already defaults, so no label depends on a gap.
+
+Decision  Keep only loans whose data starts one month before or in the
+          first payment month. Exclude the other 15,437 (5.1%).
+          Freddie Mac only buys loans that are being paid, so loans
+          that went bad before the purchase were never bought and are
+          not in the data. The late-start loans are survivors, and
+          keeping them would make them look safer than they were. The
+          scorecard is for loans at the moment they are made, and
+          these were not new applications when Freddie Mac bought them.
+
+Rejected  Excluding only the 1,766 with no visible window and labelling
+          the rest from the months that can be seen - the missing
+          months are not random. They are where early defaults would
+          have been, and the loans that defaulted then are missing.
+
+Cost      About 5% of the sample is lost; about 284,000 loans remain,
+          enough to build on. The model is not built for loans bought
+          after they were made, and its documentation must say so.
