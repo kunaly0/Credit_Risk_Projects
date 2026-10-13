@@ -79,6 +79,7 @@ psql -h localhost -U postgres -d credit_risk -f sql/ops/build_all.sql
 python -m scripts.load_sample --root <folder holding sample_2005/ to sample_2017/>
 python src/macro/load_fred.py
 python src/dq/run_dq_suite.py
+psql -h localhost -U postgres -d credit_risk -f sql/model/build_pd_target.sql
 ```
 
 Then check the result: `sql/ops/table_row_counts.sql` for row counts,

@@ -5,8 +5,9 @@
 --
 -- Usage, from the repo root:
 --   psql -h localhost -U postgres -d <new database> -f sql/ops/build_all.sql
--- Then load data with scripts/load_sample.py and src/macro/load_fred.py
--- (README, "Reproduce it").
+-- Then load data with scripts/load_sample.py and src/macro/load_fred.py,
+-- and fill pd_target with sql/model/build_pd_target.sql (README,
+-- "Reproduce it").
 
 \set ON_ERROR_STOP on
 
@@ -27,8 +28,9 @@ SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public') AS has_table
 \ir ../10_move_fact_to_pg_default.sql
 \ir ../11_drop_tablespace_credit_risk_ts.sql
 \ir ../12_create_dashboard_views.sql
+\ir ../13_create_pd_target.sql
 
--- Compare with the live database: 8 tables, 24 partitions, 24 vintages
+-- Compare with the live database: 9 tables, 24 partitions, 24 vintages
 SELECT
     (SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public'
        AND tablename NOT LIKE 'fact_loan_performance_%') AS tables,

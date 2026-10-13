@@ -1589,3 +1589,23 @@ Rejected  Excluding only the 1,766 with no visible window and labelling
 Cost      About 5% of the sample is lost; about 284,000 loans remain,
           enough to build on. The model is not built for loans bought
           after they were made, and its documentation must say so.
+
+### D-054 | 2026-10-10 | COVID: no adjustment needed under the 24-month window
+
+Context   From March 2020 borrowers with Freddie Mac loans could pause
+          payments under the CARES Act, and the data reports paused
+          payments as months behind. Under D-051 only 80 loans, all
+          from the 2017 vintage (first payments 2018-04 to 2020-05),
+          have a window that reaches March 2020. Checked: 1 of the 80
+          defaults inside its window, and that default is before March
+          2020. None defaults in March 2020 or later.
+
+Decision  Keep the 80 loans with no adjustment. COVID changes no label
+          in the target, so there is nothing to correct.
+
+Rejected  Dropping the 80 - removes loans for a problem they do not
+          have. Cutting their windows at February 2020 - extra logic
+          that changes no label.
+
+Cost      None today. If the window is lengthened (for example to 36
+          months, D-051 Rejected), COVID has to be handled again.
