@@ -1439,8 +1439,7 @@ Cost      Breaks the consistency D-042 promised. A file in sql/ no
 
 Context   Project 0 was planned at about a month and took 45 days. The
           S07 review lists, mine and an outside one, still had items
-          left. Job applications are planned for mid-November, and
-          interviews ask about what is on the resume, not every file.
+          left. None of them changes the data Project 1 is built on.
 
 Decision  Close Project 0 at S07. Gate PASS with two exceptions: a full
           12-file reload into a fresh database was not re-run (the schema
@@ -1451,8 +1450,7 @@ Decision  Close Project 0 at S07. Gate PASS with two exceptions: a full
           app, the full reload test, restyling D-001 to D-035.
 
 Rejected  Finishing every review item first - about a week more, for work
-          that is not on the resume and does not change what Project 1
-          builds on.
+          that does not change what Project 1 builds on.
 
 Cost      Two exceptions stay open, and the deferred items must be picked
           up when Project 1 touches that code or they will be forgotten.
