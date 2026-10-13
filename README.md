@@ -14,7 +14,7 @@ checked against the data rather than the document.
 | Project | Status |
 |---|---|
 | 0 - Data foundation: Freddie Mac loans and FRED macro data in PostgreSQL, with data quality rules and an audit trail | Complete, October 2026 |
-| 1 - Probability of default scorecard | Next |
+| 1 - Probability of default scorecard | In progress: target defined (S08) |
 
 ## Project 0 at a glance
 
@@ -57,6 +57,7 @@ flowchart LR
 | dim_macro_state | state per month | 16,638 |
 | load_audit, load_audit_field | load run, and field count per run | - |
 | dq_results | rule measurement per DQ run | - |
+| pd_target | loan: its Project 1 default label, or why it is left out | 299,999 |
 
 The fact table's primary key includes `vintage_code` because PostgreSQL
 requires the partition key in it. That alone would let one loan-month appear
@@ -90,7 +91,7 @@ mine (D-041).
 
 ## How it was built
 
-The work ran in sections, S00 to S07, and commit messages start with the
+The work ran in sections, S00 to S08, and commit messages start with the
 section they belong to.
 
 | Section | What it covered |
@@ -99,16 +100,17 @@ section they belong to.
 | S01 | Data dictionary for both Freddie Mac files, checked field by field against the data |
 | S02 | Schema: star schema, 24 partitions, constraints |
 | S03 | Loading: Python loader, sentinel handling, audit tables, reconciliation |
-| S04 | Data quality: 18 rules, the automated suite, missing-data methodology |
+| S04 | Data quality: 18 rules (R-01 to R-18), the automated suite, missing-data methodology |
 | S05 | SQL check against the loaded data (joins, window functions, CTEs). No code committed |
-| S06 | Macro data: FRED national and state series, coverage check |
+| S06 | Macro data: FRED national and state series, coverage check. Rules R-19 and R-20 cover the macro data |
 | S07 | Governance: lineage, governance report, dashboard, backup, CI, this README |
+| S08 | Project 1 target: what counts as a default, a 24-month window, which loans are left out (D-050 to D-054), the `pd_target` table, backup script |
 
 ## Documents
 
 | Document | What it holds |
 |---|---|
-| [Decision log](docs/DECISIONS.md) | 49 decisions, including incidents and what changed because of them |
+| [Decision log](docs/DECISIONS.md) | 54 decisions, including incidents and what changed because of them |
 | [DQ rules](docs/dq_rules.md) | The 20 rules, their thresholds and results |
 | [Lineage](docs/lineage.md) | From raw file to table, and what the lineage cannot show |
 | [Governance report](docs/governance_report.md) | Controls tested, findings, open items, limitations |
@@ -123,8 +125,9 @@ section they belong to.
 config/       loader and FRED settings
 dashboards/   Power BI file
 docs/         the documents above, data dictionaries, provenance checksums
-scripts/      sample loader, checksum verification
-sql/          numbered build files 01-12, plus dq/ (rule queries) and ops/ (build, counts)
+scripts/      sample loader, checksum verification, database backup
+sql/          numbered build files 01-13, plus dq/ (rule queries), ops/ (build, counts)
+              and model/ (Project 1 tables)
 src/          etl/ (loader), macro/ (FRED), dq/ (DQ suite)
 tests/        unit tests, run on every push
 ```
@@ -132,7 +135,7 @@ tests/        unit tests, run on every push
 Built with PostgreSQL 18, Python 3.13 (psycopg 3, pandas), Power BI Desktop and
 GitHub Actions.
 
-The schema, the data quality SQL and the decisions in the log are my own work. The larger Python scripts (the FRED loader, the checksum and sample-load scripts, the tests) were written with AI assistance and reviewed by me.
+The schema in sql/01-12, the data quality SQL and the decisions in the log are my own work. The larger Python scripts (the FRED loader, the checksum, sample-load and backup scripts, the tests) and the Project 1 target SQL (sql/13, sql/model) were written with AI assistance from my decisions and reviewed by me.
 
 ## Licence
 

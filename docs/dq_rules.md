@@ -402,6 +402,25 @@ Open        CONFOUNDED. Missing-DTI loans are almost entirely 2012 and
 Action      Do NOT impute missing DTI. Missingness separates on the
             outcome by 2.5 percentage points, so a median fill erases a
             real signal. Keep "missing" as its own category
+Re-test     13 Oct 2026 (S08), on pd_target: D-050 default, 24-month
+            window, D-052 and D-053 exclusions. Within each vintage
+            vintage    missing DTI        has DTI
+            2005       1,402  0.93%     45,998  1.05%
+            2006         973  2.16%     44,826  1.98%
+            2007       1,057  4.54%     45,097  5.04%
+            2008         989  4.95%     47,710  4.08%
+            2012      17,096  1.34%     30,896  0.14%
+            2017       1,749  1.49%     46,482  0.80%
+            REVERSED. Within 2012 missing-DTI loans default about ten
+            times as often, within 2017 about twice. 2005-2008 show no
+            consistent difference; each missing group is about 1,000
+            loans, so gaps of half a point are noise. Pooled, missing
+            still looks safer (about 1.7% vs 2.3%) because 73% of
+            missing-DTI loans are 2012. The 13 Sep result was the
+            vintage mix, not the loans (Simpson's paradox). The HARP
+            explanation in Notes does not hold: within 2012, HARP loans
+            are the riskier ones. Open item closed. Action unchanged.
+            Cause of the 2017 missing DTI not yet checked - S10
 
 R-19  Macro jump flags
 Dimension   Validity

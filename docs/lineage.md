@@ -48,6 +48,7 @@ with `--root C:\Backup\Datasets`.
 | dim_macro_state | FRED state series | src/macro/load_fred.py | As dim_macro. Months with no values get no row (D-045) | 16,638 | Not recorded |
 | load_audit, load_audit_field | Each loader run | src/etl/loader.py | - | 15, 62 | - |
 | dq_results | Each DQ suite run | src/dq/run_dq_suite.py | - | 389 | Runs 1-8 are partial; 9-13 are full runs of 63 rows each |
+| pd_target | dim_loan and fact_loan_performance | sql/model/build_pd_target.sql | Derived, not loaded: the Project 1 target under D-050 to D-054. Excluded loans keep a row with the reason | 299,999 | Rebuilt by the script; no audit row |
 
 Joins: fact_loan_performance to dim_loan on loan_sequence_number, and both
 to dim_vintage on vintage_code, are foreign keys. Loan month to dim_macro,

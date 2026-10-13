@@ -19,6 +19,12 @@ Cause       HARP loans are disclosed as Not Available (R-14). 17,399 of
             cause: DTI above 65 is also suppressed (R-06)
 Evidence    Missing-DTI loans reach serious delinquency at 7.77% vs 10.26%
             for loans with DTI - a 2.5pp separation (R-18)
+Re-tested   13 Oct 2026, on the S08 target and within vintage (R-18):
+            missing-DTI loans default more, not less - 1.34% vs 0.14% in
+            2012, 1.49% vs 0.80% in 2017, no consistent gap in
+            2005-2008. The figures above were the vintage mix. The signal
+            sits in 2012 and 2017, which supports the Caveat below.
+            Decision unchanged
 Decision    KEEP AS CATEGORY
 Why         Missingness separates on the outcome, so a median fill erases
             a real signal. It is also a perfect proxy for HARP status,

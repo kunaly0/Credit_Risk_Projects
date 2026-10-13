@@ -1038,6 +1038,18 @@ Cost      The DTI decision rests on a provisional target - "ever 90+ days
           decision was never tested against the outcome at all; it rests
           on the rate being negligible.
 
+Revisited 2026-10-13. DTI re-tested on the S08 target (pd_target,
+          D-050 to D-053), comparing within each vintage. The 13 Sep
+          direction reverses: missing-DTI loans default about ten
+          times as often as other 2012 loans (1.34% vs 0.14%) and about
+          twice as often in 2017 (1.49% vs 0.80%). 2005-2008 show no
+          consistent difference. Pooled, missing still looks safer
+          (about 1.7% vs 2.3%) because 73% of missing-DTI loans are
+          from 2012, the lowest-default vintage - the confounding the
+          Cost block warned about. KEEP AS CATEGORY stands, on stronger
+          evidence: missingness carries a signal, in the opposite
+          direction to the one first recorded. New figures in R-18.
+
 ### D-037 | 2026-09-15 | dq_results design - long format, surrogate key, write-before-run
 
 Context   S04 produced 18 rules whose results come in incompatible shapes.

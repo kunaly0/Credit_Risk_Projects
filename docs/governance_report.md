@@ -37,7 +37,7 @@ is its first test.
 
 | Control | What happened | Status |
 |---|---|---|
-| Project Knowledge refreshed at every section close (D-018) | Never refreshed. It still describes the project as of 23 Aug. The S04 section pack was never uploaded | Refresh at S07 close |
+| Project Knowledge refreshed at every section close (D-018) | Never refreshed. It still describes the project as of 23 Aug. The S04 section pack was never uploaded | Refreshed and uploaded 5 Oct; checked 7 Oct |
 | Incidents recorded in handoffs | 3 of 12 read failures were recorded. The S06 handoff said the server was not restarted; its log shows two restarts | Incidents now taken from the server log |
 | Disk sleep fix for the read failures (D-039) | Five more failures followed | Superseded by D-047 |
 | Load audit | Failed loads left no row, and TRUNCATE is not logged, so the audit total does not match the table (R-01 fails) | Failed loads fixed 5 Oct (#1). TRUNCATE still open (#12) |
@@ -66,6 +66,9 @@ and a check step before every commit.
 **F4 - Medium. Planned controls not followed up.** The D-018 refresh, the
 S04 pack upload and the D-005 monitoring were all written as plans and never
 checked. Open until S07 close.
+Closed 7 Oct, at the S08 opener: Project Knowledge was refreshed on 5 Oct and
+the S04 pack uploaded the same day, both checked in the project; the D-005 key
+was rotated on 1 Oct.
 
 **F5 - Medium. The load audit cannot explain the table on its own.** Runs
 2, 3, 7 and 13 exist only as gaps, and the audit cannot say which of four
