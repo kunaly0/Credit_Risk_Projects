@@ -1,6 +1,8 @@
 # Decision Log - Credit Risk Portfolio
 
-Record of non-obvious decisions, with the reasoning and the date.
+Record of non-obvious decisions about the data and the models, with the
+reasoning and the date. An entry is added only when a choice changes the
+data, a model, or how a result should be read.
 
 **Conventions**
 - What an entry decided is never rewritten. Corrections, outcomes and
@@ -11,10 +13,12 @@ Record of non-obvious decisions, with the reasoning and the date.
 - Mistakes, incidents and control failures are logged here too.
 - D-001 to D-035 use older layouts. From D-036, entries use plain aligned
   labels (Context, Decision, Rejected, Cost).
-- Edited 2026-10-01: personal details removed from D-007, and D-007, D-008,
-  D-009 and D-012 cut down to their decisions. Dashes, arrows and other
-  special characters in older entries replaced with plain ASCII, wording
-  unchanged. The earlier text is in git history.
+- Edited 2026-10-01: dashes, arrows and other special characters in older
+  entries replaced with plain ASCII, wording unchanged.
+- Edited 2026-10-13: D-004, D-007, D-009 and D-012 removed. They recorded
+  tool and account setup, not choices about the data or the models. D-008,
+  D-014 and D-049 trimmed to match. Numbers are never reused, so those four
+  stay empty. The earlier text is in git history.
 
 ---
 
@@ -103,36 +107,6 @@ not prove what was acquired. Provenance requires source *and* integrity.
 
 ---
 
-### D-004 | 2026-08-21 | RISK (OPEN): Power BI Service refresh against non-Azure PostgreSQL
-
-**Issue:** Community and vendor evidence indicates Power BI Service requires
-an on-premises data gateway to run a scheduled refresh against PostgreSQL,
-regardless of whether the database is cloud-hosted. Power BI classifies
-sources by whether a first-party cloud connector exists, not by physical
-location. Neon is therefore treated as a generic PostgreSQL endpoint.
-Personal-mode gateway is additionally reported not to work with PostgreSQL
-validation, implying the full standard gateway is required.
-
-**Impact:** Threatens the mandatory Project 1 live-artifact requirement -
-a Power BI dashboard published to Service, connected to the Project 0
-PostgreSQL database, on a scheduled monthly refresh.
-
-**Status:** OPEN. To be tested empirically on S00 Day 3 rather than accepted
-from documentation.
-
-**Fallback ladder, preferred order:**
-- **A.** Azure Database for PostgreSQL - inside the Microsoft ecosystem,
-  likely gateway-free. Cost: card required, free tier time-limited.
-- **B.** Standard on-premises gateway on local machine, pointed at Neon.
-  Cost: refresh only runs when the laptop is on.
-- **C.** Monitoring script writes an aggregate extract to OneDrive/SharePoint;
-  Power BI refreshes from that. Cost: deviates from the "not flat files"
-  requirement - would need explicit documentation as a deviation.
-- **D.** Streamlit becomes the live dashboard; Power BI remains Desktop-only
-  with screenshots. Cost: loses the Power BI Service artifact entirely.
-
----
-
 ### D-005 | 2026-08-21 | INCIDENT: FRED API key exposed
 
 **What happened:** FRED API key pasted into a chat window during setup.
@@ -201,47 +175,24 @@ installation. A control believed to be working but not working is more
 dangerous than no control, because it removes vigilance without providing
 protection.
 
-### D-007 | 2026-08-22 | FAILED: Microsoft 365 trial - no work account obtained
-
-**Objective:** Power BI Service does not accept personal accounts, so a work
-(organisational) account was needed for the Project 1 live-artifact
-requirement.
-
-**Attempted:** A Microsoft 365 Business Basic trial. The billing terms were
-worse than assumed (an annual commitment, not monthly), payment setup failed,
-and the tenant that was created could not be signed into. No money was spent.
-
-**Rejected:**
-- *Custom domain plus self-service signup* - goes through the same signup
-  process that produced the broken tenant, so not worth paying for untested.
-- *Signing up under a different country* - would mean declaring a false
-  country of residence. Not acceptable for applications to regulated
-  financial services roles.
-
-**Outcome:** No work account. Route closed. An employer's work account would
-allow an existing `.pbix` to be published later.
-
----
-
 ### D-008 | 2026-08-22 | Streamlit adopted as primary live artifact
-**SUPERSEDES the Power BI Service component of D-004**
 
 **Decision:** The Project 1 live-artifact requirement is met by a public
 Streamlit app reading from cloud PostgreSQL (Neon), not a Power BI report
 published to Power BI Service.
 
-**Trigger:** D-007. No work account available.
+**Trigger:** Power BI Service publishes only from a work (organisational)
+account, and none is available to this project.
 
-**Consequence:** D-004 is closed. Streamlit connects to Postgres directly
-through a Python driver, so the gateway question for scheduled refresh no
-longer applies.
+**Consequence:** Streamlit connects to Postgres directly through a Python
+driver, so scheduled refresh needs no Power BI gateway.
 
 **Retained:** Power BI Desktop for dashboard development - data model,
 relationships, DAX, KPI design. Only publishing is lost. The monthly PSI/CSI
 monitoring script (S18) is unaffected; it writes to a Postgres table either
 way.
 
-**Lost:** A Power BI Service link, which some job listings name explicitly.
+**Lost:** A Power BI Service link.
 
 **Deviation from the original plan:** the stretch-goal cut order (CI, Docker,
 Streamlit, FastAPI, with Power BI Service never cut) assumed Power BI Service
@@ -252,15 +203,6 @@ artifact.
 `.pbix` is then a short job.
 
 ---
-
-### D-009 | 2026-08-22 | S00 Day 3 changed to a Streamlit deployment test
-
-**Change:** Day 3 was to publish a Power BI report to Service with scheduled
-refresh. After D-007 it became a smoke test: deploy a trivial public Streamlit
-app that reads one table from Neon.
-
-**Why:** prove the deployment path works before building anything on it. The
-result is D-014.
 
 ### D-010 | 2026-08-22 | Environment audit - documented packages not installed
 **Found:** `python-dotenv`, `seaborn`, `optbinning`, `imbalanced-learn`,
@@ -280,28 +222,6 @@ millions of rows would take hours. Confirms the two-database architecture:
 local Postgres as development warehouse, Neon as serving layer holding only
 scored outputs, monitoring tables and dashboard aggregates.
 **Revisit if:** Serving-layer tables exceed ~500k rows.
-
-### D-012 | 2026-08-23 | Power BI Service purchase deferred
-
-**Decision:** No spend on Power BI Pro or a custom domain until a finished
-dashboard exists.
-
-**Finding:** A Power BI Service link cannot be opened by an unlicensed
-recruiter - Pro is needed by both sharer and viewer. The only public option,
-"Publish to web", removes access controls and exposes the underlying data,
-and still needs Service access, which D-007 could not obtain.
-
-**Why:** Streamlit gives a clickable public link at no cost. The Power BI
-skill comes from Desktop work (data model, DAX, star schema, KPI design),
-which needs no account.
-
-**Counterpoint:** Power BI is more widely recognised than Streamlit in Indian
-analytics job listings. Mitigated by Desktop screenshots in the README.
-
-**Revisit if:** the dashboard is finished and a public Power BI link is still
-wanted.
-
----
 
 ### D-013 | 2026-08-23 | Streamlit Cloud holds the Neon credential
 
@@ -333,10 +253,6 @@ externally on a device outside the local network.
 **Result:** PASS. Full path confirmed end to end - local Python -> GitHub ->
 Streamlit Cloud -> Neon, with the credential held in a managed secrets store
 and never present in the repository.
-
-**Closes D-004.** The risk that Power BI Service requires an on-premises
-gateway for scheduled refresh against non-Azure PostgreSQL is no longer
-applicable. Streamlit connects to Postgres directly via a Python driver.
 
 **Validates D-008.** Streamlit as primary live artifact is no longer an
 untested contingency adopted under pressure; it is a proven deployment path.
@@ -1437,9 +1353,9 @@ Cost      Breaks the consistency D-042 promised. A file in sql/ no
 
 ### D-049 | 2026-10-05 | Project 0 closed with documented exceptions and deferrals
 
-Context   Project 0 was planned at about a month and took 45 days. The
-          S07 review lists, mine and an outside one, still had items
-          left. None of them changes the data Project 1 is built on.
+Context   The S07 review lists, mine and an outside one, still had
+          items left. None of them changes the data Project 1 is built
+          on.
 
 Decision  Close Project 0 at S07. Gate PASS with two exceptions: a full
           12-file reload into a fresh database was not re-run (the schema

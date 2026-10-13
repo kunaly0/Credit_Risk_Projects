@@ -95,9 +95,10 @@ this report.
 
 ## Decision log
 
-49 entries, D-001 to D-049. D-019 was never used. Five were replaced or
-corrected by later entries: D-002's volumes by D-025, D-004 by D-008, D-031
-by D-034, and D-022 and D-039 by D-047. Two were recorded late and say so
+D-001 to D-049 at S07 close. D-019 was never used, and D-004, D-007,
+D-009 and D-012 were removed on 13 Oct (see the log's header). Four were
+replaced or corrected by later entries: D-002's volumes by D-025, D-031 by
+D-034, and D-022 and D-039 by D-047. Two were recorded late and say so
 (D-018, D-046). Corrections and outcomes are added under the original entry
 with a date, never written over it (D-005, D-039, D-041, D-047).
 
