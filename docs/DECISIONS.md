@@ -1535,3 +1535,30 @@ Rejected  Dropping the 80 - removes loans for a problem they do not
 
 Cost      None today. If the window is lengthened (for example to 36
           months, D-051 Rejected), COVID has to be handled again.
+
+### D-055 | 2026-10-13 | First PD scorecard uses loan and borrower facts only, no macro
+
+Context   Default rates by vintage run from 0.57% (2012) to 5.03%
+          (2007). Most of that gap comes from what the economy did
+          after the loans were made (house prices fell from 2007), not
+          from the borrowers. National macro figures at origination
+          are the same for every loan made in the same month.
+
+Decision  The first scorecard uses only borrower and loan facts known
+          on the day the loan was made. Its job is to rank borrowers
+          from safer to riskier. The level of PD is set in calibration
+          (S14), and the economy enters through scenarios in Project 4.
+
+Rejected  National macro at origination - it separates vintages, not
+          borrowers. With six vintages the model would mostly learn
+          which year a loan came from. Macro from inside the
+          performance window - not known when the loan is made, so it
+          is leakage. State macro at origination (D-042) - it does
+          vary within a month, but needs the publication lag D-043
+          left open and has gaps for PR, GU and VI (D-045). It can be
+          tried later as a challenger.
+
+Cost      Before calibration the model's PD will be too high or too
+          low for years whose economy differs from the training years.
+          Out-of-time results are read for ranking first (AUC, Gini)
+          and for level only after S14.
