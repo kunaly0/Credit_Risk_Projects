@@ -1562,3 +1562,38 @@ Cost      Before calibration the model's PD will be too high or too
           low for years whose economy differs from the training years.
           Out-of-time results are read for ranking first (AUC, Gini)
           and for level only after S14.
+
+### D-056 | 2026-10-15 | Sample split: 2017 is the out-of-time test, 2005-2012 split 60/20/20
+
+Context   The model will score loans made after it is built, so the
+          final test has to come from a year it has never seen. A
+          random split across all six vintages puts test loans in the
+          same years as the training loans, and its score flatters.
+          2012 windows end by 2015 and 2017 windows start in 2017, so
+          the two share no outcome months. In-model loans: 2005-2012
+          hold 236,044 loans and 5,991 defaults (2.54%), 2017 holds
+          48,231 and 398 (0.83%).
+
+Decision  2017 is the out-of-time test. It is not used for any
+          choice - binning, variable selection or settings - and is
+          scored once, after the model is final. The 2005, 2006, 2007,
+          2008 and 2012 loans are split 60/20/20 into train,
+          validation and an in-time test, with each vintage and the
+          default rate spread evenly across the three. Each loan's set
+          is stored and does not change between runs.
+
+Rejected  Random split across all six vintages - the test shares
+          years with training, so it cannot show how the model does
+          in a new year. Train 2005-2008 and validate on 2012 -
+          training would hold no loans made after the crisis, and
+          every choice would rest on 2012's 273 defaults. 2012 and
+          2017 together as the test - the same problem. Train and
+          validation only - validation is looked at many times, so
+          there would be no honest in-time score to set against 2017.
+
+Cost      2017 is a calm year, so the out-of-time test checks ranking
+          in good times only; the crisis years are tested in-time.
+          The model trains at 2.54% and 2017 runs at 0.83%, so its PD
+          will be too high on 2017 until calibration (S14, D-055).
+          398 defaults are enough to measure ranking, with some
+          uncertainty in the result.
