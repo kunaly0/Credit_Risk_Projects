@@ -81,6 +81,7 @@ python -m scripts.load_sample --root <folder holding sample_2005/ to sample_2017
 python src/macro/load_fred.py
 python src/dq/run_dq_suite.py
 psql -h localhost -U postgres -d credit_risk -f sql/model/build_pd_target.sql
+psql -h localhost -U postgres -d credit_risk -f sql/model/build_pd_sample_split.sql
 ```
 
 Then check the result: `sql/ops/table_row_counts.sql` for row counts,
@@ -135,7 +136,7 @@ tests/        unit tests, run on every push
 Built with PostgreSQL 18, Python 3.13 (psycopg 3, pandas), Power BI Desktop and
 GitHub Actions.
 
-The schema in sql/01-12, the data quality SQL and the decisions in the log are my own work. The larger Python scripts (the FRED loader, the checksum, sample-load and backup scripts, the tests) and the Project 1 target SQL (sql/13, sql/model) were written with AI assistance from my decisions and reviewed by me.
+The schema in sql/01-12, the data quality SQL and the decisions in the log are my own work. The larger Python scripts (the FRED loader, the checksum, sample-load and backup scripts, the tests) and the Project 1 target and sample split SQL (sql/13, sql/14, sql/model) were written with AI assistance from my decisions and reviewed by me.
 
 ## Licence
 
