@@ -1597,3 +1597,48 @@ Cost      2017 is a calm year, so the out-of-time test checks ranking
           will be too high on 2017 until calibration (S14, D-055).
           398 defaults are enough to measure ranking, with some
           uncertainty in the result.
+
+### D-057 | 2026-10-16 | Feature eligibility: origination fields only, year markers excluded
+
+Context   Each of the 32 dim_loan columns was checked against the User
+          Guide with one question: was it known on the day the loan was
+          made? A field can pass that test and still mark the year,
+          which lets the model learn vintage instead of borrower risk
+          (D-055). Checked on dim_loan: harp_indicator is Y only in 2012
+          (17,399) and 2017 (1,804); super_conforming_flag is Y only
+          from 2008 (59 in 2008, 0 before); the average interest rate is
+          5.80-6.40% for 2005-2008 and 3.76-4.19% for 2012 and 2017.
+
+Decision  Candidate features: credit_score, first_time_homebuyer, msa,
+          mi_percentage, number_of_units, occupancy_status,
+          original_cltv, original_dti_ratio, original_upb,
+          original_ltv, channel, prepayment_penalty_indicator,
+          amortization_type, property_state, property_type,
+          postal_code, loan_purpose, loan_term, number_of_borrowers,
+          interest_only_indicator and harp_indicator.
+          original_interest_rate is used only as a spread over the
+          market rate of its month, built in S11. Excluded: the IDs and
+          dates (loan_sequence_number, which contains the year and
+          quarter, vintage_code, first_payment_date, maturity_date,
+          pre_harp_loan_sequence_number), property_valuation_method and
+          vantagescore (D-036), special_eligibility_program,
+          seller_name and super_conforming_flag. Nothing from the
+          performance table, pd_target, pd_sample_split or dim_vintage
+          is a feature.
+
+Rejected  Raw interest rate - mostly tells the year. seller_name - names
+          lenders of a given era, and which lenders are named is decided
+          quarter by quarter by volume. super_conforming_flag - cannot
+          be Y before October 2008, and loan size is already in
+          original_upb. special_eligibility_program - filled only from
+          March 2015, so every training loan shows 9. Dropping
+          harp_indicator - known at origination, and HARP loans carry no
+          DTI by disclosure rule, so it explains the missing-DTI
+          category (R-18).
+
+Cost      In training harp_indicator is Y only in 2012, a low-default
+          year, so it can act partly as a year marker; S11 checks it
+          within 2012 alone. The spread needs the market rate for the
+          month the loan was made, and the data gives only the first
+          payment date; S11 sets that rule. Excluding seller_name loses
+          any lender-quality signal.
