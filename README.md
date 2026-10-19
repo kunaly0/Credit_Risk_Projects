@@ -14,7 +14,7 @@ checked against the data rather than the document.
 | Project | Status |
 |---|---|
 | 0 - Data foundation: Freddie Mac loans and FRED macro data in PostgreSQL, with data quality rules and an audit trail | Complete, October 2026 |
-| 1 - Probability of default scorecard | In progress: target defined (S08) |
+| 1 - Probability of default scorecard | In progress: target defined (S08), sample split and leakage audit (S09) |
 
 ## Project 0 at a glance
 
@@ -58,6 +58,7 @@ flowchart LR
 | load_audit, load_audit_field | load run, and field count per run | - |
 | dq_results | rule measurement per DQ run | - |
 | pd_target | loan: its Project 1 default label, or why it is left out | 299,999 |
+| pd_sample_split | loan in the model: train, validation, test or oot | 284,275 |
 
 The fact table's primary key includes `vintage_code` because PostgreSQL
 requires the partition key in it. That alone would let one loan-month appear
@@ -93,7 +94,7 @@ mine (D-041).
 
 ## How it was built
 
-The work ran in sections, S00 to S08, and commit messages start with the
+The work ran in sections, S00 to S09, and commit messages start with the
 section they belong to.
 
 | Section | What it covered |
@@ -107,18 +108,20 @@ section they belong to.
 | S06 | Macro data: FRED national and state series, coverage check. Rules R-19 and R-20 cover the macro data |
 | S07 | Governance: lineage, governance report, dashboard, backup, CI, this README |
 | S08 | Project 1 target: what counts as a default, a 24-month window, which loans are left out (D-050 to D-054), the `pd_target` table, backup script |
+| S09 | Project 1 sample: 2017 as the out-of-time test, which columns may be features, leakage audit (D-055 to D-057), the `pd_sample_split` table, two feature views and their checks |
 
 ## Documents
 
 | Document | What it holds |
 |---|---|
-| [Decision log](docs/DECISIONS.md) | 54 decisions, including incidents and what changed because of them |
+| [Decision log](docs/DECISIONS.md) | 52 decisions, including incidents and what changed because of them |
 | [DQ rules](docs/dq_rules.md) | The 20 rules, their thresholds and results |
 | [Lineage](docs/lineage.md) | From raw file to table, and what the lineage cannot show |
 | [Governance report](docs/governance_report.md) | Controls tested, findings, open items, limitations |
 | [Known defects](docs/known_defects.md) | Defects found, fixed and still open |
 | [Data dictionaries](docs/data_dictionary_origination.md) | Every field, for [origination](docs/data_dictionary_origination.md) and [performance](docs/data_dictionary_performance.md) files |
 | [Missing data](docs/missing_data_methodology.md) | How each field's gaps will be treated in Project 1 |
+| [Leakage audit](docs/leakage_audit.md) | The Project 1 sample sets, which columns may be features, and the checks |
 | [Backup](docs/postgres_backup.md) | How the database is backed up and the restore test |
 
 ## Repository layout
@@ -128,8 +131,8 @@ config/       loader and FRED settings
 dashboards/   Power BI file
 docs/         the documents above, data dictionaries, provenance checksums
 scripts/      sample loader, checksum verification, database backup
-sql/          numbered build files 01-13, plus dq/ (rule queries), ops/ (build, counts)
-              and model/ (Project 1 tables)
+sql/          numbered build files 01-15, plus dq/ (rule queries), ops/ (build, counts)
+              and model/ (Project 1 tables and checks)
 src/          etl/ (loader), macro/ (FRED), dq/ (DQ suite)
 tests/        unit tests, run on every push
 ```
