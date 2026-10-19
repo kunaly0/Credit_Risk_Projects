@@ -7,7 +7,8 @@
 --   psql -h localhost -U postgres -d <new database> -f sql/ops/build_all.sql
 -- Then load data with scripts/load_sample.py and src/macro/load_fred.py,
 -- fill pd_target with sql/model/build_pd_target.sql, then pd_sample_split
--- with sql/model/build_pd_sample_split.sql (README, "Reproduce it").
+-- with sql/model/build_pd_sample_split.sql, then run
+-- sql/model/check_pd_sample.sql (README, "Reproduce it").
 
 \set ON_ERROR_STOP on
 
@@ -30,6 +31,7 @@ SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public') AS has_table
 \ir ../12_create_dashboard_views.sql
 \ir ../13_create_pd_target.sql
 \ir ../14_create_pd_sample_split.sql
+\ir ../15_create_pd_feature_views.sql
 
 -- Compare with the live database: 10 tables, 24 partitions, 24 vintages
 SELECT

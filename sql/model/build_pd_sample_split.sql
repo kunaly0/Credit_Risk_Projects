@@ -15,7 +15,8 @@
 --   3. The first 60% of each pile is train, the next 20% validation, the
 --      last 20% test. 2017 is oot whatever its position.
 -- If pd_target changes (a new target rule, a reload), the piles change and
--- some loans move set. Re-run this file, and re-run everything built on it.
+-- some loans move set. Re-run this file, then sql/model/check_pd_sample.sql,
+-- and re-run everything built on it.
 
 \set ON_ERROR_STOP on
 
