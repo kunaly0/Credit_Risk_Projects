@@ -23,7 +23,7 @@ All 32 dim_loan columns were checked against the Freddie Mac User Guide.
 | Verdict | Columns |
 |---|---|
 | Candidate feature (21) | credit_score, first_time_homebuyer, msa, mi_percentage, number_of_units, occupancy_status, original_cltv, original_dti_ratio, original_upb, original_ltv, channel, prepayment_penalty_indicator, amortization_type, property_state, property_type, postal_code, loan_purpose, loan_term, number_of_borrowers, interest_only_indicator, harp_indicator |
-| Only as a spread over the market rate, built in S11 | original_interest_rate |
+| Only as a spread over the market rate, built in S10 | original_interest_rate |
 | ID or date | loan_sequence_number (contains the year and quarter), vintage_code, first_payment_date, maturity_date, pre_harp_loan_sequence_number |
 | Marks the year | property_valuation_method, vantagescore (D-036), special_eligibility_program, seller_name, super_conforming_flag |
 
@@ -48,7 +48,7 @@ the performance table and is not a feature.
 | Set | Use |
 |---|---|
 | train | Everything the model learns: bins, fills for missing values (D-036), feature selection, weights |
-| validation | Comparing and choosing between options; calibration fit (decided in S14) |
+| validation | Comparing and choosing between options; calibration fit (decided in S13) |
 | test, oot | Scored once, after the model is final |
 
 ## Controls
@@ -65,5 +65,5 @@ the performance table and is not a feature.
   borrower, so other repeat borrowers cannot be found.
 - oot is 2017, a low-default year. Ranking in a downturn is tested in-time
   only (D-056).
-- Within training, harp_indicator is Y only in 2012 (D-057). S11 checks it
+- Within training, harp_indicator is Y only in 2012 (D-057). S10 checks it
   within 2012.

@@ -30,7 +30,7 @@ published to Neon yet; it holds only the S00 test table (D-014).
 |---|---|---|---|---|
 | Freddie Mac sample, Release 47 | Raw/Freddie_mac/sample | 6 zips, one per vintage year, downloaded Aug 2026 | SHA-256 at download, docs/provenance/checksums_freddie_sample.csv (D-003) | 6 of 6 on both disks |
 | Freddie Mac standard | Raw/Freddie_mac/standard | 6 zips. Not loaded (D-035) | checksums_freddie_standard.csv | 6 of 6 |
-| LendingClub, Kaggle mirror | Raw/Lending_club | 1 zip. Not loaded; for S19 | checksums_lendingclub.csv | 1 of 1 |
+| LendingClub, Kaggle mirror | Raw/Lending_club | 1 zip. Not loaded; for S18 | checksums_lendingclub.csv | 1 of 1 |
 | FRED | Raw/FRED/20260926_162658 | 107 series. 5 requested series do not exist on FRED: GUUR, GUSTHPI, PRSTHPI, VIUR, VISTHPI | manifest.json, SHA-256 per file, written by load_fred.py | 107 of 107 |
 | FRED, failed pull | Raw/FRED/20260926_155351 | Same 107 series. The load stopped on the old GDP CHECK and rolled back (D-044). Never loaded | manifest.json | 107 of 107 |
 

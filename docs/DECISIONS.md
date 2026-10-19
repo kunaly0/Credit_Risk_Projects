@@ -19,6 +19,10 @@ data, a model, or how a result should be read.
   tool and account setup, not choices about the data or the models. D-008,
   D-014 and D-049 trimmed to match. Numbers are never reused, so those four
   stay empty. The earlier text is in git history.
+- Edited 2026-10-19: the planned sections S10 (data exploration) and S11
+  (binning) became one section, S10, so every later section moved down one
+  number. Section numbers in the entries were updated to match; no decision
+  changed. The earlier text is in git history.
 
 ---
 
@@ -56,7 +60,7 @@ run the finished pipeline against the standard files for final validation.
 **Measured basis:** Sample ~ 300 MB compressed across six vintages; standard
 ~ 8.2 GB. Ratio ~ 27x.
 
-**Rationale:** S11 (WoE binning) will run hundreds of iterations. Iteration
+**Rationale:** S10 (WoE binning) will run hundreds of iterations. Iteration
 speed is the binding constraint during development, not data volume.
 
 **OPEN ITEM - CLOSED 2026-08-23:** Sampling methodology confirmed from
@@ -189,7 +193,7 @@ driver, so scheduled refresh needs no Power BI gateway.
 
 **Retained:** Power BI Desktop for dashboard development - data model,
 relationships, DAX, KPI design. Only publishing is lost. The monthly PSI/CSI
-monitoring script (S18) is unaffected; it writes to a Postgres table either
+monitoring script (S17) is unaffected; it writes to a Postgres table either
 way.
 
 **Lost:** A Power BI Service link.
@@ -231,7 +235,7 @@ visible to app viewers.
 
 **Current scope:** Synthetic test data only. No real or sensitive data.
 
-**Required before production (S23):** Create a dedicated **read-only**
+**Required before production (S22):** Create a dedicated **read-only**
 PostgreSQL role for the deployed application. The `neondb_owner` credential
 currently in use has write and DDL privileges that a read-only dashboard has
 no need for. Least privilege - a deployed service should hold the minimum
@@ -463,7 +467,7 @@ with 24 partitions - one per quarter across the six D-001 vintages.
   objects to manage, but a coarser unit of reload.
 
 **Why vintage won:** the workload is loan-level and longitudinal. Default
-definition (S08), roll rates and migration (S16), and lifetime PD (Project 4)
+definition (S08), roll rates and migration (S15), and lifetime PD (Project 4)
 all follow individual loans through time. A loan belongs to exactly one
 vintage, so partitioning on vintage keeps its entire monthly history inside a
 single partition. It also aligns partition boundaries with the vintage-based
@@ -566,7 +570,7 @@ a 7.7x expansion.
 
 **Effect on the decision:** none, except to strengthen it. D-002 chose
 development on the sample because iteration speed is the binding constraint
-during S11's WoE binning work. A standard dataset twice the assumed size makes
+during S10's WoE binning work. A standard dataset twice the assumed size makes
 that argument stronger, not weaker.
 
 **Confirmed correct in D-002:** the sampling rule. 50,000 loans per full
@@ -899,7 +903,7 @@ easiest case rather than a representative one.
 **Decision**
 D-017 is resolved: the standard load is feasible. It is deferred, and no
 standard data is loaded now. D-002 develops on the sample and validates on the
-standard dataset, and validation does not begin until S13 at the earliest.
+standard dataset, and validation does not begin until S12 at the earliest.
 Loading 101 GB two months ahead of need would leave 59 GB of headroom for
 sorts, index builds and temporary files, alongside everything Projects 0 and 1
 still require on the same drive.
@@ -1408,7 +1412,7 @@ Rejected  180+ days past due - finds trouble late and goes against the
 Cost      Counts borrowers who reached 90 days and then caught up. PD
           is higher because of them; LGD (Project 2) treats them as
           defaults with no loss, so expected loss is not overstated.
-          S20 checks that the model ranks loans the same way under a
+          S19 checks that the model ranks loans the same way under a
           180-day target. The 539 loans with 96 or 16 left the data
           early and their outcome is unknown - handled with the other
           early exits in S08 Step 3. Bankruptcy and most unlikely-to-pay
@@ -1449,7 +1453,7 @@ Rejected  12 months - too few defaults (2012 has about 100 in 50,000
 Cost      Defaults after month 24 are not counted. 2005 loans went bad
           mostly in 2008-2010, so 2005 shows 1.1% at 24 months against
           11.2% over its whole life. Basel and IFRS 9 Stage 1 need a
-          1-year PD, so the 24-month PD is converted in S14. The 80
+          1-year PD, so the 24-month PD is converted in S13. The 80
           loans whose window reaches March 2020 are handled in S08
           Step 4.
 
@@ -1547,7 +1551,7 @@ Context   Default rates by vintage run from 0.57% (2012) to 5.03%
 Decision  The first scorecard uses only borrower and loan facts known
           on the day the loan was made. Its job is to rank borrowers
           from safer to riskier. The level of PD is set in calibration
-          (S14), and the economy enters through scenarios in Project 4.
+          (S13), and the economy enters through scenarios in Project 4.
 
 Rejected  National macro at origination - it separates vintages, not
           borrowers. With six vintages the model would mostly learn
@@ -1561,7 +1565,7 @@ Rejected  National macro at origination - it separates vintages, not
 Cost      Before calibration the model's PD will be too high or too
           low for years whose economy differs from the training years.
           Out-of-time results are read for ranking first (AUC, Gini)
-          and for level only after S14.
+          and for level only after S13.
 
 ### D-056 | 2026-10-15 | Sample split: 2017 is the out-of-time test, 2005-2012 split 60/20/20
 
@@ -1594,7 +1598,7 @@ Rejected  Random split across all six vintages - the test shares
 Cost      2017 is a calm year, so the out-of-time test checks ranking
           in good times only; the crisis years are tested in-time.
           The model trains at 2.54% and 2017 runs at 0.83%, so its PD
-          will be too high on 2017 until calibration (S14, D-055).
+          will be too high on 2017 until calibration (S13, D-055).
           398 defaults are enough to measure ranking, with some
           uncertainty in the result.
 
@@ -1617,7 +1621,7 @@ Decision  Candidate features: credit_score, first_time_homebuyer, msa,
           postal_code, loan_purpose, loan_term, number_of_borrowers,
           interest_only_indicator and harp_indicator.
           original_interest_rate is used only as a spread over the
-          market rate of its month, built in S11. Excluded: the IDs and
+          market rate of its month, built in S10. Excluded: the IDs and
           dates (loan_sequence_number, which contains the year and
           quarter, vintage_code, first_payment_date, maturity_date,
           pre_harp_loan_sequence_number), property_valuation_method and
@@ -1637,8 +1641,8 @@ Rejected  Raw interest rate - mostly tells the year. seller_name - names
           category (R-18).
 
 Cost      In training harp_indicator is Y only in 2012, a low-default
-          year, so it can act partly as a year marker; S11 checks it
+          year, so it can act partly as a year marker; S10 checks it
           within 2012 alone. The spread needs the market rate for the
           month the loan was made, and the data gives only the first
-          payment date; S11 sets that rule. Excluding seller_name loses
+          payment date; S10 sets that rule. Excluding seller_name loses
           any lender-quality signal.

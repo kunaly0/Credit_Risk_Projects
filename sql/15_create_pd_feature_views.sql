@@ -5,7 +5,7 @@
 --   pd_features_build  train and validation. Used to build and choose:
 --                      binning, feature selection, fitting, calibration.
 --   pd_features_final  test and oot (2017). Sealed: scored once, after the
---                      model is final (S13 onwards).
+--                      model is final (S12 onwards).
 --
 -- Each view holds a key (loan_sequence_number, never a feature - it
 -- contains the origination year and quarter), the set, the target, and the
@@ -14,7 +14,7 @@
 -- a column is added or removed.
 --
 -- original_interest_rate is left out on purpose. D-057 allows it only as a
--- spread over the market rate of its month, which S11 adds here in a new
+-- spread over the market rate of its month, which S10 adds here in a new
 -- numbered file (D-048).
 CREATE VIEW pd_features_build AS
 SELECT s.loan_sequence_number,
