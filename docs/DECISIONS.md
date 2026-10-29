@@ -1646,3 +1646,19 @@ Cost      In training harp_indicator is Y only in 2012, a low-default
           month the loan was made, and the data gives only the first
           payment date; S10 sets that rule. Excluding seller_name loses
           any lender-quality signal.
+
+### D-058 | 2026-10-29 | Market rate month for the rate spread:
+
+Context   The rate spread (D-057) subtracts the market rate, and dim_macro
+          holds one market rate per month, so each loan must point to one
+          month. Loans carry only first_payment_date, not an origination
+          date, so a rule is needed to turn it into a month.
+Decision  Market rate month = first_payment_date minus 3 months, taken as
+          the month the borrower's rate was locked. Nothing from after the
+          lock is used. Checked 29 Oct: all 299,999 loans find a rate.
+Rejected  First payment minus 2 months (closing month) - about one month
+          after the lock. Average of the origination quarter from the loan
+          sequence number - for loans made early in the quarter it takes in
+          months after the lock.
+Cost      Lock timing varies: some borrowers lock 1 or 2 months before
+          closing, so the month can be off by about one month either way.
