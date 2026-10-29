@@ -50,7 +50,7 @@ with `--root C:\Backup\Datasets`.
 | dq_results | Each DQ suite run | src/dq/run_dq_suite.py | - | 389 | Runs 1-8 are partial; 9-13 are full runs of 63 rows each |
 | pd_target | dim_loan and fact_loan_performance | sql/model/build_pd_target.sql | Derived, not loaded: the Project 1 target under D-050 to D-054. Excluded loans keep a row with the reason | 299,999 | Rebuilt by the script; no audit row |
 | pd_sample_split | pd_target | sql/model/build_pd_sample_split.sql | Derived: the sample set of each loan with a target (D-056) | 284,275 | Rebuilt by the script; no audit row |
-| pd_features_build, pd_features_final | pd_sample_split, pd_target, dim_loan | sql/15 | Views, nothing stored. Columns limited to D-057; checked by sql/model/check_pd_sample.sql | 188,832 and 95,443 | - |
+| pd_features_build, pd_features_final | pd_sample_split, pd_target, dim_loan, dim_macro | sql/15, sql/16 | Views, nothing stored. Columns limited to D-057 plus rate_spread (D-058); checked by sql/model/check_pd_sample.sql | 188,832 and 95,443 | - |
 
 Joins: fact_loan_performance to dim_loan on loan_sequence_number, and both
 to dim_vintage on vintage_code, are foreign keys. Loan month to dim_macro,

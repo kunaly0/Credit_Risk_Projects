@@ -32,6 +32,7 @@ SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public') AS has_table
 \ir ../13_create_pd_target.sql
 \ir ../14_create_pd_sample_split.sql
 \ir ../15_create_pd_feature_views.sql
+\ir ../16_add_rate_spread_to_pd_views.sql
 
 -- Compare with the live database: 10 tables, 24 partitions, 24 vintages
 SELECT

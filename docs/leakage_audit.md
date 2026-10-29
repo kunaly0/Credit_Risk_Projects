@@ -53,8 +53,10 @@ the performance table and is not a feature.
 
 ## Controls
 
-- The model reads only pd_features_build and pd_features_final (sql/15).
-  Each holds the key, the set, the target and the 21 candidate features.
+- The model reads only pd_features_build and pd_features_final (sql/15, sql/16).
+  Each holds the key, the set, the target, the 21 candidate features and
+  rate_spread (sql/16, D-058: market rate from first payment minus 3 months,
+  before the rate lock, so no later information).
 - sql/model/check_pd_sample.sql runs 9 checks - set coverage, oot is
   exactly 2017, equal default rates, the rows and the columns of each view -
   and stops on any failure. 9 of 9 passed on 19 Oct 2026.

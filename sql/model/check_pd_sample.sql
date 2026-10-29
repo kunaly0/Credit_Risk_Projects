@@ -69,9 +69,9 @@ FROM (SELECT COUNT(*) AS rows_in_view,
      (SELECT COUNT(*) AS expected
       FROM pd_sample_split WHERE sample_set IN ('test', 'oot')) e;
 
--- 7-8: each view has exactly the allowed columns (D-057): key, set, target
--- and the 21 candidate features. Any extra column - a date, the vintage, an
--- outcome - fails.
+-- 7-8: each view has exactly the allowed columns: key, set, target, the 21
+-- candidate features of D-057 and rate_spread (D-058, sql/16). Any extra
+-- column - a date, the vintage, an outcome - fails.
 INSERT INTO sample_checks
 WITH allowed (column_name) AS (
     VALUES ('loan_sequence_number'), ('sample_set'), ('target'),
@@ -80,7 +80,8 @@ WITH allowed (column_name) AS (
            ('original_dti_ratio'), ('original_upb'), ('original_ltv'), ('channel'),
            ('prepayment_penalty_indicator'), ('amortization_type'), ('property_state'),
            ('property_type'), ('postal_code'), ('loan_purpose'), ('loan_term'),
-           ('number_of_borrowers'), ('interest_only_indicator'), ('harp_indicator')
+           ('number_of_borrowers'), ('interest_only_indicator'), ('harp_indicator'),
+           ('rate_spread')
 ),
 views (check_no, view_name) AS (
     VALUES (7, 'pd_features_build'), (8, 'pd_features_final')
@@ -105,7 +106,7 @@ diff AS (
     FROM views v
 )
 SELECT check_no,
-       view_name || ' has only the 24 allowed columns',
+       view_name || ' has only the 25 allowed columns',
        COALESCE('extra: ' || extra, 'no extra') || '; ' || COALESCE('missing: ' || missing, 'none missing'),
        extra IS NULL AND missing IS NULL
 FROM diff;
