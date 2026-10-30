@@ -24,7 +24,7 @@ repos:
         name: ruff
         entry: python -m ruff check --fix
         language: system
-        types: [python]
+        types_or: [python, jupyter]
 
       - id: detect-secrets
         name: detect-secrets
