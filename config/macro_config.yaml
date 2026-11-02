@@ -16,11 +16,12 @@ table_start: "2000-01-01"     # first month written to the tables
 raw_subdir: "Raw/FRED"
 
 national:                     # dim_macro column -> FRED series
-  unemployment:  {series_id: UNRATE,       frequency: monthly}
-  hpi:           {series_id: HPIPONM226S,  frequency: monthly}
-  mortgage_rate: {series_id: MORTGAGE30US, frequency: weekly}
-  gdp_growth:    {series_id: GDPC1,        frequency: quarterly, transform: annualised_growth}
+  unemployment:      {series_id: UNRATE,       frequency: monthly}
+  hpi:               {series_id: HPIPONM226S,  frequency: monthly}
+  mortgage_rate:     {series_id: MORTGAGE30US, frequency: weekly}
+  mortgage_rate_15:  {series_id: MORTGAGE15US, frequency: weekly}
+  gdp_growth:        {series_id: GDPC1,        frequency: quarterly, transform: annualised_growth}
 
 state:                        # dim_macro_state column -> FRED series; {state} = CA, TX
-  unemployment: {series_id: "{state}UR",    frequency: monthly}
-  hpi:          {series_id: "{state}STHPI", frequency: quarterly}
+  unemployment:      {series_id: "{state}UR",    frequency: monthly}
+  hpi:               {series_id: "{state}STHPI", frequency: quarterly}

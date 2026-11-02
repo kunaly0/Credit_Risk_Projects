@@ -118,6 +118,12 @@ FROM (SELECT COUNT(*) AS n
       FROM pd_features_build b
       JOIN pd_features_final f ON f.loan_sequence_number = b.loan_sequence_number) x;
 
+-- 10: every loan in both views has a rate_spread. An empty one means a
+-- market rate is missing for that month or term (sql/18, D-059).
+INSERT INTO sample_checks
+SELECT 10, 'every loan in both views has a rate_spread', n || ' empty', n = 0
+FROM (SELECT (SELECT COUNT(*) FROM pd_features_build WHERE rate_spread IS NULL)
+           + (SELECT COUNT(*) FROM pd_features_final WHERE rate_spread IS NULL) AS n) x;
 SELECT check_no, check_name, detail, passed
 FROM sample_checks
 ORDER BY check_no;
@@ -128,6 +134,6 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO failed FROM sample_checks WHERE NOT passed;
     IF failed > 0 THEN
-        RAISE EXCEPTION '% of 9 sample checks failed - see the table above', failed;
+        RAISE EXCEPTION '% of 10 sample checks failed - see the table above', failed;
     END IF;
 END $$;

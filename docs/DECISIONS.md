@@ -1662,3 +1662,33 @@ Rejected  First payment minus 2 months (closing month) - about one month
           months after the lock.
 Cost      Lock timing varies: some borrowers lock 1 or 2 months before
           closing, so the month can be off by about one month either way.
+Update    2026-11-02: the month is now capped at the last month of the
+          loan's origination quarter (sql/18). 1,106 train and validation
+          loans have a first payment date 6 to 77 months after their
+          quarter, possibly rewritten after a modification (D-020). On
+          train they default at 2.78% (23 of 826) against 2.54% for the
+          rest, so no sign of leakage; the cap keeps every market rate
+          inside the loan's own quarter anyway.
+
+### D-059 | 2026-10-30 | Rate spread uses the market rate for the loan's term
+
+Context   The rate spread of D-058 subtracts the 30-year market rate from
+          every loan. Shorter loans carry lower rates because they are paid
+          back sooner, so on train 180-month loans averaged -0.39 against
+          +0.08 for 360-month loans, and they are 14% of train. The spread
+          was measuring loan length as well as the borrower.
+Decision  Loans of 180 months or less are compared with the 15-year market
+          rate (FRED MORTGAGE15US), longer loans with the 30-year rate
+          (MORTGAGE30US), same month rule as D-058. This is the usual
+          spread at origination (SATO) measure.
+Rejected  Comparing each loan with other loans of the same term and month -
+          depends on the sample itself and cannot be applied the same way
+          to test, oot or a new loan. Keeping the 30-year rate and relying
+          on loan_term - bins look at one feature at a time, so term stays
+          mixed into the spread.
+Cost      One more FRED series and a new dim_macro column. Every loan over
+          180 months is judged against the 30-year rate, including 18- and
+          20-year loans (240 months averaged +0.03 against it).
+          Checked 2 Nov on train: 180-month loans now average +0.13
+          against +0.08 for 360-month loans (was -0.39), and all 10
+          checks in check_pd_sample.sql pass.

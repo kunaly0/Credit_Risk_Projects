@@ -80,6 +80,7 @@ same day (#14). Past runs are unchanged, and TRUNCATE is still not logged
 (#12).
 
 **F6 - Medium. The macro tables do not record which FRED pull they hold.**
+Closed 2 Nov 2026 (S10): both macro tables now carry loaded_at (sql/17). The reload that day revised HPI in 234 months (largest change 0.75) and GDP growth in 68 (largest 0.79); unemployment and the 30-year rate were unchanged.
 D-041 said they did. Since FRED revises history, the pull date matters.
 Recorded in `docs/lineage.md`; fix when `load_fred.py` next runs.
 

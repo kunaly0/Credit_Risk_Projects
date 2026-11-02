@@ -35,7 +35,13 @@ CONFIG_PATH = REPO_ROOT / "config" / "macro_config.yaml"
 
 # Match the numeric scale of each column in sql/01 and sql/08, so rounding
 # happens here, visibly, instead of silently inside Postgres.
-DECIMALS = {"unemployment": 1, "hpi": 2, "mortgage_rate": 3, "gdp_growth": 2}
+DECIMALS = {
+    "unemployment": 1,
+    "hpi": 2,
+    "mortgage_rate": 3,
+    "mortgage_rate_15": 3,
+    "gdp_growth": 2,
+}
 
 RETRY_STATUSES = {429, 500, 502, 503, 504}
 
@@ -399,14 +405,24 @@ def to_rows(table: pd.DataFrame) -> list[tuple[Any, ...]]:
 def load_tables(national: pd.DataFrame, state: pd.DataFrame) -> None:
     """Replace both tables in one transaction - all or nothing."""
     national_sql = (
-        "INSERT INTO dim_macro (month, unemployment, hpi, mortgage_rate, gdp_growth) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "INSERT INTO dim_macro "
+        "(month, unemployment, hpi, mortgage_rate, mortgage_rate_15, gdp_growth) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
     )
     state_sql = (
         "INSERT INTO dim_macro_state (month, property_state, unemployment, hpi) "
         "VALUES (%s, %s, %s, %s)"
     )
-    national = national[["month", "unemployment", "hpi", "mortgage_rate", "gdp_growth"]]
+    national = national[
+        [
+            "month",
+            "unemployment",
+            "hpi",
+            "mortgage_rate",
+            "mortgage_rate_15",
+            "gdp_growth",
+        ]
+    ]
     # Leaving the with-block commits; any error inside it rolls everything back.
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM dim_macro_state")

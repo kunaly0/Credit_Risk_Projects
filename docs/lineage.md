@@ -44,13 +44,13 @@ with `--root C:\Backup\Datasets`.
 | dim_vintage | Hand-written seed | sql/05 | - | 24 | - |
 | dim_loan | sample_orig_{year}.txt | src/etl/loader.py | Sentinel codes to NULL, counted per field. YYYYMM to date (D-026). Vintage from the loan ID. Loans outside the 24 vintages rejected and counted (D-033) | 299,999 | 1, 5, 6, 8, 9, 10 |
 | fact_loan_performance | sample_perf_{year}.txt | src/etl/loader.py | As dim_loan. current_interest_rate above 30 set to NULL and counted (D-032). Negative months_to_maturity counted (D-034) | 19,859,812 | 4, 11, 12, 14, 15, and one of 16-19 |
-| dim_macro | FRED national series | src/macro/load_fred.py | Weekly rate averaged per month, quarterly values repeated, GDP growth annualised (D-043). Gaps left NULL (D-045) | 320 | Not recorded |
-| dim_macro_state | FRED state series | src/macro/load_fred.py | As dim_macro. Months with no values get no row (D-045) | 16,638 | Not recorded |
+| dim_macro | FRED national series | src/macro/load_fred.py, sql/17 | Weekly rates averaged per month (30-year, and 15-year from S10, D-059), quarterly values repeated, GDP growth annualised (D-043). Gaps left NULL (D-045) | 322 | loaded_at column (sql/17) |
+| dim_macro_state | FRED state series | src/macro/load_fred.py | As dim_macro. Months with no values get no row (D-045) | 16,690 | loaded_at column (sql/17) |
 | load_audit, load_audit_field | Each loader run | src/etl/loader.py | - | 15, 62 | - |
 | dq_results | Each DQ suite run | src/dq/run_dq_suite.py | - | 389 | Runs 1-8 are partial; 9-13 are full runs of 63 rows each |
 | pd_target | dim_loan and fact_loan_performance | sql/model/build_pd_target.sql | Derived, not loaded: the Project 1 target under D-050 to D-054. Excluded loans keep a row with the reason | 299,999 | Rebuilt by the script; no audit row |
 | pd_sample_split | pd_target | sql/model/build_pd_sample_split.sql | Derived: the sample set of each loan with a target (D-056) | 284,275 | Rebuilt by the script; no audit row |
-| pd_features_build, pd_features_final | pd_sample_split, pd_target, dim_loan, dim_macro | sql/15, sql/16 | Views, nothing stored. Columns limited to D-057 plus rate_spread (D-058); checked by sql/model/check_pd_sample.sql | 188,832 and 95,443 | - |
+| pd_features_build, pd_features_final | pd_sample_split, pd_target, dim_loan, dim_macro | sql/15, sql/16, sql/18 | Views, nothing stored. Columns limited to D-057 plus rate_spread (D-058, D-059); checked by sql/model/check_pd_sample.sql | 188,832 and 95,443 | - |
 
 Joins: fact_loan_performance to dim_loan on loan_sequence_number, and both
 to dim_vintage on vintage_code, are foreign keys. Loan month to dim_macro,

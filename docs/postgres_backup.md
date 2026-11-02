@@ -30,6 +30,8 @@ Without `--test` it only dumps. By hand:
 | 2026-10-05 | credit_risk_20261005_172608.dump | 305 MB | - | not repeated | S07 close. Same procedure as the 1 Oct restore test |
 | 2026-10-13 | credit_risk_20261013_113338.dump | 308 MB | 2.0 min | stopped | S08 close, by hand. The restore printed nothing for about 10 minutes and was cancelled, probably at a password prompt that never showed. Not tested |
 | 2026-10-13 | credit_risk_20261013_115703.dump | 308 MB | 1.0 min | 3.2 min | scripts/backup_db.py --test. 9 of 9 tables match, pd_target included; fact_loan_performance 19,859,812 |
+| 2026-10-19 | credit_risk_20261019_171545.dump | 310 MB | - | - | S09 close. scripts/backup_db.py --test. 10 of 10 tables match |
+| 2026-11-02 | credit_risk_20261102_120308.dump | 310 MB | - | - | Before the dim_macro reload (S10). scripts/backup_db.py --test. 10 of 10 tables match |
 
 ## Not covered
 
