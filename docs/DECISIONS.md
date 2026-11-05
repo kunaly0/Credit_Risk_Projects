@@ -1692,3 +1692,45 @@ Cost      One more FRED series and a new dim_macro column. Every loan over
           Checked 2 Nov on train: 180-month loans now average +0.13
           against +0.08 for 360-month loans (was -0.39), and all 10
           checks in check_pd_sample.sql pass.
+
+### D-060 | 2026-11-05 | Five fields left out of the model's feature list
+
+Context   Field checks on train (S10). amortization_type is FRM and
+          interest_only_indicator is False for every loan, and
+          prepayment_penalty_indicator is Y for only 22 of 141,623.
+          Location comes at three sizes: postal_code 888 codes, msa 451
+          codes (19% empty, codes redrawn in 2013 and kept as of funding),
+          property_state 54. With 451 or 888 codes most groups hold only a
+          handful of defaults.
+Decision  Leave out amortization_type, interest_only_indicator,
+          prepayment_penalty_indicator, msa and postal_code. Location comes
+          from property_state. The drop is in the model's feature list; the
+          views keep all D-057 candidates, so allowed and chosen stay
+          separate.
+Rejected  Keeping msa or postal_code and letting the binning group the
+          codes - too few defaults per code, msa codes in 2017 can differ
+          from training, and both are precise locations, a fair-lending
+          question for S20. A yes/no "in a metro area" flag from msa - an
+          empty msa mixes countryside with unknown.
+Cost      City and zip-level detail is lost: two loans in the same state
+          look alike on location.
+
+### D-061 | 2026-11-05 | Missing values get their own bin only when it can stand
+
+Context   Missing values on train (S10), after D-060: original_dti_ratio
+          12,841 (9.1%), mostly 2012 HARP loans (S04); eight other fields
+          under 0.06% each - credit_score 83, number_of_borrowers 47,
+          number_of_units 40, first_time_homebuyer 21, original_cltv 6,
+          original_ltv 5, mi_percentage 2, property_type 1.
+Decision  A field's missing values get their own bin when they are 5% or
+          more of train - only original_dti_ratio. Smaller ones are filled
+          with a value learned on train (the median for numbers, the most
+          common value for categories) and applied unchanged to
+          validation, test and oot. Extends D-036 to every field.
+Rejected  A missing bin for every field - eight bins of 0 to 2 defaults,
+          so their WoE is noise. Dropping loans with any missing value -
+          loses the 12,841 DTI-missing loans, mostly HARP, and skews the
+          sample; a real applicant cannot be refused a score for one
+          empty field.
+Cost      Up to 205 filled values are treated as typical even if their
+          emptiness meant something.
