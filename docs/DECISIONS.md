@@ -970,6 +970,11 @@ Revisited 2026-10-13. DTI re-tested on the S08 target (pd_target,
           evidence: missingness carries a signal, in the opposite
           direction to the one first recorded. New figures in R-18.
 
+Update    2026-11-06: superseded for DTI by D-061 and D-062. With HARP
+          refinances out of scope, DTI is missing for 1.97% of train
+          (2,592 loans), so it is filled with the train median instead of
+          getting its own bin.
+
 ### D-037 | 2026-09-15 | dq_results design - long format, surrogate key, write-before-run
 
 Context   S04 produced 18 rules whose results come in incompatible shapes.
@@ -1602,6 +1607,11 @@ Cost      2017 is a calm year, so the out-of-time test checks ranking
           398 defaults are enough to measure ranking, with some
           uncertainty in the result.
 
+Update    2026-11-06: after D-062 the sets are train 131,366 (3,456
+          defaults, 2.63%), validation 43,790, test 43,793 and oot 46,484
+          (372, 0.80%). Only 2012 and 2017 changed; 2005-2008 are identical,
+          because each vintage is dealt separately.
+
 ### D-057 | 2026-10-16 | Feature eligibility: origination fields only, year markers excluded
 
 Context   Each of the 32 dim_loan columns was checked against the User
@@ -1722,6 +1732,8 @@ Context   Missing values on train (S10), after D-060: original_dti_ratio
           under 0.06% each - credit_score 83, number_of_borrowers 47,
           number_of_units 40, first_time_homebuyer 21, original_cltv 6,
           original_ltv 5, mi_percentage 2, property_type 1.
+          On train the DTI-missing loans default at 1.70% against 2.62%
+          for the rest, so their own bin carries information.
 Decision  A field's missing values get their own bin when they are 5% or
           more of train - only original_dti_ratio. Smaller ones are filled
           with a value learned on train (the median for numbers, the most
@@ -1734,3 +1746,35 @@ Rejected  A missing bin for every field - eight bins of 0 to 2 defaults,
           empty field.
 Cost      Up to 205 filled values are treated as typical even if their
           emptiness meant something.
+
+Update    2026-11-06: after D-062, original_dti_ratio is missing for 1.97%
+          of train (2,592 loans), under the 5% line, so it is filled with the
+          train median like the other fields; no field keeps a missing bin.
+          Its default rate, 3.13% against 2.62%, rests on 81 defaults and
+          is within luck.
+
+### D-062 | 2026-11-06 | HARP refinances out of the model's scope; channel as retail vs third party
+
+Context   Drift checks on train across 2005-2012 (S10). HARP loans exist only
+          in 2012. Across all of train they default at 1.34%, below the 2.54%
+          average, but within 2012 they default at 1.34% against 0.14% for
+          other 2012 loans: about 10 times riskier. They look safe only
+          because 2012 was a calm year (Simpson's paradox). They are also
+          measured differently - no DTI collected, LTV up to 684 - so the
+          same signal sat in the DTI-missing and LTV-over-100 bins, and the
+          program ended in 2018. Separately, channel codes changed in 2008:
+          only R and T before, B and C after, and no T in 2012.
+Decision  HARP refinances are excluded in every set: harp_refinance is the
+          first exclusion reason in build_pd_target.sql (allowed by sql/19).
+          19,203 loans leave the model and 265,433 stay. harp_indicator is
+          left out of the feature list, since it is now N for every loan.
+          channel enters the model as retail (R) vs third party (B, C and T
+          together), which means the same thing in every year.
+Rejected  Dropping only harp_indicator and keeping the loans - the backwards
+          signal stays inside the LTV and DTI-missing bins. Keeping
+          everything - the model would learn that HARP is safe. Dropping
+          channel, or keeping its four codes - T only marks pre-2008 loans,
+          and B and C are learned mostly from 2012.
+Cost      The model is not built for HARP-style refinances. 2012 in train
+          shrinks from 28,794 to 18,537 loans; 2005-2008 are unchanged.
+          About a day of rebuild.

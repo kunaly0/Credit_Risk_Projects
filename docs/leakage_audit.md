@@ -7,10 +7,12 @@ D-055, D-056 and D-057 in the decision log.
 
 | Set | Vintages | Loans | Defaults | Rate | Read from |
 |---|---|---|---|---|---|
-| train | 2005-2012, 60% | 141,623 | 3,593 | 2.54% | pd_features_build |
-| validation | 2005-2012, 20% | 47,209 | 1,198 | 2.54% | pd_features_build |
-| test | 2005-2012, 20% | 47,212 | 1,200 | 2.54% | pd_features_final |
-| oot | 2017 | 48,231 | 398 | 0.83% | pd_features_final |
+| train | 2005-2012, 60% | 131,366 | 3,456 | 2.63% | pd_features_build |
+| validation | 2005-2012, 20% | 43,790 | 1,152 | 2.63% | pd_features_build |
+| test | 2005-2012, 20% | 43,793 | 1,154 | 2.64% | pd_features_final |
+| oot | 2017 | 46,484 | 372 | 0.80% | pd_features_final |
+
+Counts after D-062 (6 Nov 2026), which took HARP refinances out of the model.
 
 Each vintage and target is split 60/20/20 separately, in the order of md5()
 of the loan number, so every set has the same mix of years and defaults and

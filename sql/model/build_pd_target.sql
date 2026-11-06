@@ -6,7 +6,7 @@
 -- Usage, from the repo root:
 --   psql -h localhost -U postgres -d credit_risk -f sql/model/build_pd_target.sql
 --
--- Rules: header of sql/13_create_pd_target.sql, and D-050 to D-054.
+-- Rules: header of sql/13_create_pd_target.sql, D-050 to D-054, and D-062 (HARP refinances out of scope).
 
 \set ON_ERROR_STOP on
 
@@ -45,6 +45,7 @@ per_loan AS (
     SELECT d.loan_sequence_number,
            d.vintage_code,
            d.first_payment_date,
+           d.harp_indicator,
            (d.first_payment_date + INTERVAL '24 months')::date         AS window_end,
            e.data_start,
            (EXTRACT(YEAR FROM e.data_start) * 12 + EXTRACT(MONTH FROM e.data_start))
@@ -76,7 +77,8 @@ flagged AS (
 -- Step 4 - exclusions. The first reason that applies is the one recorded.
 labelled AS (
     SELECT f.*,
-           CASE WHEN f.data_start IS NULL           THEN 'no_performance'
+           CASE WHEN f.harp_indicator = 'Y'         THEN 'harp_refinance'      -- D-062
+                WHEN f.data_start IS NULL           THEN 'no_performance'
                 WHEN f.data_start_offset < -1       THEN 'early_start'         -- D-053
                 WHEN f.data_start_offset > 0        THEN 'late_start'          -- D-053
                 WHEN f.exit_code = '96'

@@ -58,7 +58,7 @@ flowchart LR
 | load_audit, load_audit_field | load run, and field count per run | - |
 | dq_results | rule measurement per DQ run | - |
 | pd_target | loan: its Project 1 default label, or why it is left out | 299,999 |
-| pd_sample_split | loan in the model: train, validation, test or oot | 284,275 |
+| pd_sample_split | loan in the model: train, validation, test or oot | 265,433 |
 
 The fact table's primary key includes `vintage_code` because PostgreSQL
 requires the partition key in it. That alone would let one loan-month appear

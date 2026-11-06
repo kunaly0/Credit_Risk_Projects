@@ -35,6 +35,7 @@ SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public') AS has_table
 \ir ../16_add_rate_spread_to_pd_views.sql
 \ir ../17_add_mortgage_rate_15_and_loaded_at.sql
 \ir ../18_rate_spread_by_term.sql
+\ir ../19_allow_harp_exclusion_in_pd_target.sql
 
 -- Compare with the live database: 10 tables, 24 partitions, 24 vintages
 SELECT
