@@ -1,4 +1,4 @@
-# What the code in src/ and scripts/ imports, pinned to the versions in .venv.
+# What the code in src/, scripts/ and notebooks/ imports, pinned to the versions in .venv.
 # Development tools (pytest, black, ruff, pre-commit, detect-secrets) are in
 # requirements-dev.txt.
 pandas==3.0.5
@@ -8,3 +8,5 @@ python-dotenv==1.2.3
 PyYAML==6.0.3
 requests==2.34.2
 sqlalchemy==2.1.6
+optbinning==1.0.0
+scikit-learn==1.9.0
