@@ -40,28 +40,30 @@ the performance table and is not a feature.
 | Check | Finding | Treatment |
 |---|---|---|
 | Outcome columns | pd_target holds default_month, default_trigger, exit_code, exit_month and target | Only target reaches the views, as the label |
-| One borrower in two sets | 314 HARP loans whose earlier loan is also in the sample. 187 sit in a different set from it: 162 within 2005-2012, 25 between 2017 and 2005-2008 | Kept. The earlier loan's 24-month window ends before the refinance, its features are measured again at refinance, and the pairs are 0.07% of the sample |
-| Exclusions decided on later events | 287 loans with zero balance code 96 (defect found before any other exit) inside the window, excluded as outcome unknown (D-052) | Kept out. No vintage's rate moves by more than 0.1 points (S08). In use, such loans are scored like any other |
-| Late and early starts | 15,425 and 12 loans | Known when Freddie Mac buys the loan, not later (D-053) |
+| One borrower in two sets | 314 HARP loans whose earlier loan is also in the sample. 187 sat in a different set from it: 162 within 2005-2012, 25 between 2017 and 2005-2008 | Kept at S09. Since D-062 (6 Nov 2026) HARP refinances are out of scope, so no pair remains in the model |
+| Exclusions decided on later events | 287 loans with zero balance code 96 (defect found before any other exit) inside the window at S09, 261 after D-062, excluded as outcome unknown (D-052) | Kept out. No vintage's rate moves by more than 0.1 points (S08). In use, such loans are scored like any other |
+| Late and early starts | 15,090 and 12 loans (15,425 late starts before D-062, which checks HARP first) | Known when Freddie Mac buys the loan, not later (D-053) |
 | Macro data | Not used as features (D-055) | The market rate is used only to measure each loan's rate against it |
 
 ## What each set may be used for
 
 | Set | Use |
 |---|---|
-| train | Everything the model learns: bins, fills for missing values (D-036), feature selection, weights |
+| train | Everything the model learns: bins, fills for missing values (D-061), feature selection, weights |
 | validation | Comparing and choosing between options; calibration fit (decided in S13) |
 | test, oot | Scored once, after the model is final |
 
 ## Controls
 
-- The model reads only pd_features_build and pd_features_final (sql/15, sql/16).
-  Each holds the key, the set, the target, the 21 candidate features and
-  rate_spread (sql/16, D-058: market rate from first payment minus 3 months,
-  before the rate lock, so no later information).
-- sql/model/check_pd_sample.sql runs 9 checks - set coverage, oot is
-  exactly 2017, equal default rates, the rows and the columns of each view -
-  and stops on any failure. 9 of 9 passed on 19 Oct 2026.
+- The model reads only pd_features_build and pd_features_final (sql/15,
+  sql/16, sql/18). Each holds the key, the set, the target, the 21 candidate
+  features and rate_spread: the loan's rate minus the market rate for its
+  term (15-year or 30-year, D-059), for first payment minus 3 months, capped
+  at the loan's origination quarter (D-058), so no later information.
+- sql/model/check_pd_sample.sql runs 10 checks - set coverage, oot is
+  exactly 2017, equal default rates, the rows and the columns of each view,
+  and a rate_spread for every loan - and stops on any failure. 10 of 10
+  passed on 5 Nov 2026.
 
 ## Limits
 
@@ -69,5 +71,6 @@ the performance table and is not a feature.
   borrower, so other repeat borrowers cannot be found.
 - oot is 2017, a low-default year. Ranking in a downturn is tested in-time
   only (D-056).
-- Within training, harp_indicator is Y only in 2012 (D-057). S10 checks it
-  within 2012.
+- Within training, harp_indicator was Y only in 2012 (D-057). S10 found HARP
+  loans about 10 times riskier than other 2012 loans and took them out of
+  scope (D-062).

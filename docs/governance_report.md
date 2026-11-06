@@ -80,9 +80,9 @@ same day (#14). Past runs are unchanged, and TRUNCATE is still not logged
 (#12).
 
 **F6 - Medium. The macro tables do not record which FRED pull they hold.**
-Closed 2 Nov 2026 (S10): both macro tables now carry loaded_at (sql/17). The reload that day revised HPI in 234 months (largest change 0.75) and GDP growth in 68 (largest 0.79); unemployment and the 30-year rate were unchanged.
 D-041 said they did. Since FRED revises history, the pull date matters.
 Recorded in `docs/lineage.md`; fix when `load_fred.py` next runs.
+Closed 2 Nov 2026 (S10): both macro tables now carry loaded_at (sql/17). The reload that day revised HPI in 234 months (largest change 0.75) and GDP growth in 68 (largest 0.79); unemployment and the 30-year rate were unchanged.
 
 **F7 - Low. The loader ignores most of its config file.** Encoding and file
 paths are hard-coded; the config said otherwise. 5 Oct: the config now states
@@ -106,9 +106,8 @@ with a date, never written over it (D-005, D-039, D-041, D-047).
 ## Open items carried into Project 1
 
 - Load audit defects #4 and #12 (`docs/known_defects.md`).
-- FRED pull not recorded in the database (F6).
-- Territory loans (GU, VI, PR) have no state macro data. S10 decides whether
-  to use national values or exclude them.
+- FRED pull not recorded in the database (F6). Closed 2 Nov 2026.
+- Territory loans (GU, VI, PR) have no state macro data. Not needed for now: the first scorecard uses no macro features (D-055).
 - 1,153 loans carry a raised balance with no modification on record (R-12),
   and 1,395 repeat a loan age with no modification (R-17). Unexplained.
 - The undocumented DTI ceiling of 50 from 2012 (R-06).

@@ -1607,7 +1607,7 @@ Cost      2017 is a calm year, so the out-of-time test checks ranking
           398 defaults are enough to measure ranking, with some
           uncertainty in the result.
 
-Update    2026-11-06: after D-062 the sets are train 131,366 (3,456
+Revisited 2026-11-06: after D-062 the sets are train 131,366 (3,456
           defaults, 2.63%), validation 43,790, test 43,793 and oot 46,484
           (372, 0.80%). Only 2012 and 2017 changed; 2005-2008 are identical,
           because each vintage is dealt separately.
@@ -1657,7 +1657,7 @@ Cost      In training harp_indicator is Y only in 2012, a low-default
           payment date; S10 sets that rule. Excluding seller_name loses
           any lender-quality signal.
 
-### D-058 | 2026-10-29 | Market rate month for the rate spread:
+### D-058 | 2026-10-29 | Market rate month for the rate spread
 
 Context   The rate spread (D-057) subtracts the market rate, and dim_macro
           holds one market rate per month, so each loan must point to one
@@ -1691,6 +1691,9 @@ Decision  Loans of 180 months or less are compared with the 15-year market
           rate (FRED MORTGAGE15US), longer loans with the 30-year rate
           (MORTGAGE30US), same month rule as D-058. This is the usual
           spread at origination (SATO) measure.
+          Checked 2 Nov on train: 180-month loans now average +0.13
+          against +0.08 for 360-month loans (was -0.39), and all 10
+          checks in check_pd_sample.sql pass.
 Rejected  Comparing each loan with other loans of the same term and month -
           depends on the sample itself and cannot be applied the same way
           to test, oot or a new loan. Keeping the 30-year rate and relying
@@ -1699,9 +1702,6 @@ Rejected  Comparing each loan with other loans of the same term and month -
 Cost      One more FRED series and a new dim_macro column. Every loan over
           180 months is judged against the 30-year rate, including 18- and
           20-year loans (240 months averaged +0.03 against it).
-          Checked 2 Nov on train: 180-month loans now average +0.13
-          against +0.08 for 360-month loans (was -0.39), and all 10
-          checks in check_pd_sample.sql pass.
 
 ### D-060 | 2026-11-05 | Five fields left out of the model's feature list
 
@@ -1746,8 +1746,7 @@ Rejected  A missing bin for every field - eight bins of 0 to 2 defaults,
           empty field.
 Cost      Up to 205 filled values are treated as typical even if their
           emptiness meant something.
-
-Update    2026-11-06: after D-062, original_dti_ratio is missing for 1.97%
+Revisited 2026-11-06: after D-062, original_dti_ratio is missing for 1.97%
           of train (2,592 loans), under the 5% line, so it is filled with the
           train median like the other fields; no field keeps a missing bin.
           Its default rate, 3.13% against 2.62%, rests on 81 defaults and
@@ -1770,6 +1769,7 @@ Decision  HARP refinances are excluded in every set: harp_refinance is the
           left out of the feature list, since it is now N for every loan.
           channel enters the model as retail (R) vs third party (B, C and T
           together), which means the same thing in every year.
+          Together with D-061, SUPERSEDES the DTI part of D-036.
 Rejected  Dropping only harp_indicator and keeping the loans - the backwards
           signal stays inside the LTV and DTI-missing bins. Keeping
           everything - the model would learn that HARP is safe. Dropping

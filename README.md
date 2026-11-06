@@ -14,7 +14,7 @@ checked against the data rather than the document.
 | Project | Status |
 |---|---|
 | 0 - Data foundation: Freddie Mac loans and FRED macro data in PostgreSQL, with data quality rules and an audit trail | Complete, October 2026 |
-| 1 - Probability of default scorecard | In progress: target defined (S08), sample split and leakage audit (S09) |
+| 1 - Probability of default scorecard | In progress: target defined (S08), sample split and leakage audit (S09), feature checks and scope (S10) |
 
 ## Project 0 at a glance
 
@@ -53,8 +53,8 @@ flowchart LR
 | dim_loan | loan | 299,999 |
 | fact_loan_performance | loan per month, in 24 partitions by vintage | 19,859,812 |
 | dim_vintage | origination quarter | 24 |
-| dim_macro | month, national | 320 |
-| dim_macro_state | state per month | 16,638 |
+| dim_macro | month, national | 322 |
+| dim_macro_state | state per month | 16,690 |
 | load_audit, load_audit_field | load run, and field count per run | - |
 | dq_results | rule measurement per DQ run | - |
 | pd_target | loan: its Project 1 default label, or why it is left out | 299,999 |
