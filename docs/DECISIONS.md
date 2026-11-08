@@ -1778,3 +1778,45 @@ Rejected  Dropping only harp_indicator and keeping the loans - the backwards
 Cost      The model is not built for HARP-style refinances. 2012 in train
           shrinks from 28,794 to 18,537 loans; 2005-2008 are unchanged.
           About a day of rebuild.
+
+### D-063 | 2026-11-08 | Binning rules and the scorecard's nine features
+
+Context   S10 binned 16 features on train with optbinning: each bin at
+          least 5% of train, default rate moving one way across bins, at
+          most 8 bins. IV on train: credit_score 1.00, original_ltv 0.41,
+          rate_spread 0.36, original_cltv 0.36, original_dti_ratio 0.32,
+          mi_percentage 0.25, number_of_borrowers 0.24, loan_term 0.21,
+          property_state 0.17, channel 0.08, original_upb 0.03, five
+          others under 0.02. The same bins applied unchanged to
+          validation kept every IV close, but in five features two
+          neighbouring bins swapped order: bins with almost the same
+          default rate, or with about 30 defaults in validation. After
+          WoE, original_ltv and original_cltv correlate 0.89, original_ltv
+          and mi_percentage 0.66. By vintage, the property_state groups
+          keep their order in 2006-2008 but not in 2005; 2012 has too few
+          defaults to tell.
+Decision  Nine features: credit_score, original_ltv, rate_spread,
+          original_dti_ratio, mi_percentage, number_of_borrowers,
+          loan_term, property_state, channel. rate_spread,
+          original_dti_ratio and property_state are rebinned with at
+          least 10% of train per bin and at least 0.3 points of default
+          rate between neighbours; after that no bins swap on validation.
+          IV train / validation: credit_score 1.00 / 1.08, original_ltv
+          0.41 / 0.40, rate_spread 0.33 / 0.34, original_dti_ratio
+          0.32 / 0.26, mi_percentage 0.25 / 0.24, number_of_borrowers
+          0.24 / 0.23, loan_term 0.21 / 0.23, property_state 0.16 / 0.17,
+          channel 0.08 / 0.11. Bins are learned on train; validation was
+          used only to check and choose. Test and oot are untouched.
+Rejected  Keeping original_cltv - a twin of original_ltv (0.89) and
+          weaker on both sets. Keeping original_upb - weak (0.03), and it
+          rises with house prices vintage after vintage, a year marker.
+          Keeping loan_purpose, first_time_homebuyer, property_type and
+          occupancy_status - under 0.02 on train and validation;
+          number_of_units has a single bin. Dropping property_state - its
+          worst group is the worst in every vintage. Rebinning until every
+          feature passes - that would fit the bins to validation.
+Cost      property_state partly measures where the 2007 crash hit, so in
+          a calm year like 2017 it may rank less well; S12 shows it, and
+          S20 takes the fair-lending question. mi_percentage overlaps
+          original_ltv; S11 tests whether it adds anything. Bigger bins
+          cost a little IV on train.
