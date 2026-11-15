@@ -1,0 +1,37 @@
+# model_config.yaml - settings for the PD scorecard (S11).
+#
+# Decisions: D-061 blank fills, D-062 channel merge, D-063 the final 9 features.
+# Binning settings are the ones that produced docs/s10_binning_tables.csv.
+# Fill values are not set here - src/model/prepare.py learns them from train.
+
+source_view: pd_features_build      # train + validation; test and 2017 sealed until S12
+key: loan_sequence_number
+target: target
+
+channel_merge: {"B": "TP", "C": "TP", "T": "TP"}   # D-062: any third party -> TP
+
+fill_with_train_median:             # D-061
+  - credit_score
+  - original_ltv
+  - original_dti_ratio
+  - mi_percentage
+  - number_of_borrowers
+
+credit_score_range: [300, 850]      # the rule for scores outside it comes after the range query
+
+binning:                            # OptimalBinning settings, one line per kind
+  numeric_base:         {dtype: numerical, monotonic_trend: auto_asc_desc, min_bin_size: 0.05, max_n_bins: 8}
+  numeric_rebinned:     {dtype: numerical, monotonic_trend: auto_asc_desc, min_bin_size: 0.10, min_event_rate_diff: 0.003, max_n_bins: 8}
+  categorical_base:     {dtype: categorical, min_bin_size: 0.05, max_n_bins: 8}
+  categorical_rebinned: {dtype: categorical, min_bin_size: 0.10, min_event_rate_diff: 0.003, max_n_bins: 8}
+
+features:                           # D-063, highest train IV first -> which setting
+  credit_score:        numeric_base
+  original_ltv:        numeric_base
+  rate_spread:         numeric_rebinned
+  original_dti_ratio:  numeric_rebinned
+  mi_percentage:       numeric_base
+  number_of_borrowers: numeric_base
+  loan_term:           numeric_base
+  property_state:      categorical_rebinned
+  channel:             categorical_base
