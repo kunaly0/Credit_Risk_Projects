@@ -35,3 +35,18 @@ features:                           # D-063, highest train IV first -> which set
   loan_term:           numeric_base
   property_state:      categorical_rebinned
   channel:             categorical_base
+
+model_features:                     # D-064: the 9 binned features minus mi_percentage
+  - credit_score
+  - original_ltv
+  - rate_spread
+  - original_dti_ratio
+  - number_of_borrowers
+  - loan_term
+  - property_state
+  - channel
+
+scaling:                            # D-065: 600 points = 50:1 good:bad odds, PDO 20
+  base_score: 600
+  base_odds: 50
+  pdo: 20

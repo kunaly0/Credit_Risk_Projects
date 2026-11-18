@@ -1820,3 +1820,41 @@ Cost      property_state partly measures where the 2007 crash hit, so in
           S20 takes the fair-lending question. mi_percentage overlaps
           original_ltv; S11 tests whether it adds anything. Bigger bins
           cost a little IV on train.
+
+### D-064 | 2026-11-18 | Mortgage insurance dropped from the scorecard
+
+Context   First logistic regression on the 9 WoE features (S11, train
+          only). Eight coefficients came out negative, as they should.
+          mi_percentage came out positive (+0.075) with a p-value of
+          0.23. Mortgage insurance is required above 80% LTV, so MI was
+          almost copying LTV and adding nothing about default.
+
+Decision  Drop mi_percentage from the model and refit on 8 features.
+          Without it, nothing changed much except LTV: its coefficient
+          went from -0.736 to -0.675 and its standard error halved (0.059
+          to 0.030). The other seven moved by 0.003 or less. MI stays
+          binned, so the S10 binning tables are still reproduced.
+
+Rejected  Keeping MI. Its sign said a safer MI bin means more default,
+          and its p-value could not tell it apart from zero.
+
+Cost      PD loses MI. It may still be useful in LGD (Project 2).
+
+### D-065 | 2026-11-18 | Score scale: 600 points at 50:1 odds, PDO 20
+
+Context   The scorecard turns each loan's log-odds of default into
+          points. Three numbers set the scale: a base score, the
+          good:bad odds it stands for, and the points that double the
+          odds (PDO). Any choice ranks loans the same and gives the same
+          PDs; only the labels change.
+
+Decision  600 points = 50:1 odds, PDO 20. The common textbook scale and
+          easy to follow: every 20 points down halves the odds. With the
+          8 features of D-064, scores run from 476 to 764 and an average
+          train loan scores 592.
+
+Rejected  600 at 30:1 (PDO 20) and 660 at 72:1 (PDO 40). Same ranking
+          and same PDs, so nothing gained over the simpler scale.
+
+Cost      None to the model. The scale changes how scores look, not
+          which loans rank riskier or their PD.
