@@ -51,6 +51,8 @@ with `--root C:\Backup\Datasets`.
 | pd_target | dim_loan and fact_loan_performance | sql/model/build_pd_target.sql | Derived, not loaded: the Project 1 target under D-050 to D-054 and D-062. Excluded loans keep a row with the reason | 299,999 | Rebuilt by the script; no audit row |
 | pd_sample_split | pd_target | sql/model/build_pd_sample_split.sql | Derived: the sample set of each loan with a target (D-056) | 265,433 | Rebuilt by the script; no audit row |
 | pd_features_build, pd_features_final | pd_sample_split, pd_target, dim_loan, dim_macro | sql/15, sql/16, sql/18 | Views, nothing stored. Columns limited to D-057 plus rate_spread (D-058, D-059); checked by sql/model/check_pd_sample.sql | 175,156 and 90,277 | - |
+| docs/s10_binning_tables.csv | pd_features_build, train rows only | src/model/binning.py (first written by the S10 notebook) | Blanks filled with train values (D-061), channels merged (D-062), 9 features binned (D-063). Counts only, no loan rows | 70 | Checked by tests/test_binning.py |
+| docs/s11_scorecard.csv | pd_features_build, train rows only | src/model/scorecard.py | Logistic regression on 8 WoE features (D-064), points scaled to 600 at 50:1, PDO 20 (D-065). No loan rows | 40 | Checked by tests/test_scorecard.py |
 
 Joins: fact_loan_performance to dim_loan on loan_sequence_number, and both
 to dim_vintage on vintage_code, are foreign keys. Loan month to dim_macro,
@@ -92,7 +94,7 @@ only as a gap in run_id.
 | load_audit times before 5 Oct came from one transaction | Past durations read 00:00:00 | Fixed for later loads (#2) |
 | Field counts in runs 8 and 14 include rows later rejected as out of scope | Run 8 shows 50,000 vantagescore sentinels for 49,999 loans | Fixed for later loads (#14) |
 | rows_loaded is counted in Python, not read back from COPY | The count is the loader's own claim | Defect #4 |
-| FRED loads write nothing to load_audit, and the macro tables have no pull date | Which pull is loaded is known only from manifest.json and this document | Open. D-041 corrected |
+| FRED loads write nothing to load_audit | Which pull is loaded is known from manifest.json and the loaded_at column | Pull date closed 2 Nov (sql/17). load_audit still open. D-041 corrected |
 | The loader hard-codes UTF-8 and does not read the encoding from config/load_config.yaml | Works for every file so far; a non-ASCII byte would fail the load | Config corrected 5 Oct; loader reading it is Project 1 (#16) |
 | FRED values are the latest revision, not as first published | Backtests use figures nobody had at the time | D-041 |
 | Raw PDFs and the provenance CSVs inside Raw have no checksums | Their integrity is not checked | Minor |

@@ -138,3 +138,15 @@ with a date, never written over it (D-005, D-039, D-041, D-047).
   published is not modelled (D-041, D-043).
 - State and national house price indices are different measures and cannot
   be compared directly (D-046).
+
+## Project 1 controls so far (S08 to S11)
+
+| Control | How it was tested | Result |
+|---|---|---|
+| Sample checks | sql/model/check_pd_sample.sql after every rebuild of pd_target and pd_sample_split | 10 of 10 at S10 close |
+| Fit on train only | Fill values, bins and the model are learned from train rows; validation is only compared. src/model reads pd_features_build only, which holds no test or 2017 loans | Test and 2017 not read before S12 |
+| Model code reproduces S10 | tests/test_binning.py against docs/s10_binning_tables.csv: fill values, bins, loans and defaults per bin, IV | 11 of 11 pass |
+| Coefficient signs | Every WoE coefficient must be negative | 8 of 8 after mortgage insurance was dropped (D-064) |
+| Hand-scored loan | One train loan scored from docs/s11_scorecard.csv in Excel on 18 Nov, kept as a test in tests/test_scorecard.py | 518.59 points, PD 25.15%, same as the code |
+| Score and PD agree | tests/test_scorecard.py: the score-to-PD ladder, and every train loan's PD against statsmodels | Pass |
+| Stop rules in src/model | A credit score outside 300-850, a blank left after filling, or a category train never saw stops the run | Run on made-up data while the code was written; real data has not triggered them |

@@ -31,28 +31,11 @@ number_of_borrowers,"[1.50, inf)",0.5610470058988919,87.4408494535452
 loan_term,"(-inf, 239.50)",1.4561027937437063,96.99838695906769
 loan_term,"[239.50, 342.50)",0.7181562108704953,85.3631180725043
 loan_term,"[342.50, inf)",-0.165815063536483,71.42546498970599
-property_state,"<ArrowStringArray>
-['GU', 'AK', 'SD', 'VT', 'ND', 'CO', 'NE', 'OK', 'IA', 'DE', 'WI', 'HI', 'MN',
- 'PA']
-Length: 14, dtype: str",0.6153501335172948,90.0496501630898
-property_state,"<ArrowStringArray>
-['MT', 'NC', 'KY', 'TX', 'OH', 'VA', 'ID', 'KS']
-Length: 8, dtype: str",0.38960061563022874,84.17625157918329
-property_state,"<ArrowStringArray>
-['OR', 'MO', 'MA', 'IN', 'PR', 'WV', 'WA', 'SC', 'CT']
-Length: 9, dtype: str",0.1983994807649081,79.20170950587048
-property_state,"<ArrowStringArray>
-['TN', 'NM', 'AR', 'UT', 'NY', 'MD', 'IL', 'WY', 'AL', 'NJ']
-Length: 10, dtype: str",-0.03890814823470956,73.0275997883302
-property_state,"<ArrowStringArray>
-['DC', 'CA', 'NH', 'MI']
-Length: 4, dtype: str",-0.21717812817853144,68.38949177571915
-property_state,"<ArrowStringArray>
-['RI', 'AZ', 'ME', 'GA', 'MS', 'LA', 'FL', 'NV', 'VI']
-Length: 9, dtype: str",-0.6210719506157525,57.881254916767816
-channel,"<ArrowStringArray>
-['R']
-Length: 1, dtype: str",0.340582290246465,79.09916643277998
-channel,"<ArrowStringArray>
-['TP']
-Length: 1, dtype: str",-0.224772442072807,70.70093678096848
+property_state,"GU, AK, SD, VT, ND, CO, NE, OK, IA, DE, WI, HI, MN, PA",0.6153501335172948,90.0496501630898
+property_state,"MT, NC, KY, TX, OH, VA, ID, KS",0.38960061563022874,84.17625157918329
+property_state,"OR, MO, MA, IN, PR, WV, WA, SC, CT",0.1983994807649081,79.20170950587048
+property_state,"TN, NM, AR, UT, NY, MD, IL, WY, AL, NJ",-0.03890814823470956,73.0275997883302
+property_state,"DC, CA, NH, MI",-0.21717812817853144,68.38949177571915
+property_state,"RI, AZ, ME, GA, MS, LA, FL, NV, VI",-0.6210719506157525,57.881254916767816
+channel,R,0.340582290246465,79.09916643277998
+channel,TP,-0.224772442072807,70.70093678096848

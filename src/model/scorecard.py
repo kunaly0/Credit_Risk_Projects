@@ -77,11 +77,13 @@ def points_table(
         bins = binners[feature].binning_table.build().iloc[:-3]
         coef = model.params[feature]
         for label, woe in zip(bins["Bin"], bins["WoE"]):
+            if not isinstance(label, str):  # a categorical bin holds a list of values
+                label = ", ".join(str(value) for value in label)
             points = share - factor * coef * float(woe)
             rows.append(
                 {
                     "feature": feature,
-                    "bin": str(label),
+                    "bin": label,
                     "woe": float(woe),
                     "points": points,
                 }
