@@ -14,6 +14,7 @@ import math
 import sys
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from optbinning import OptimalBinning
@@ -86,6 +87,29 @@ def points_table(
                 }
             )
     return pd.DataFrame(rows)
+
+
+def score_loans(
+    model: BinaryResultsWrapper, woe: pd.DataFrame, cfg: dict[str, Any]
+) -> pd.DataFrame:
+    """Score and PD for every loan in a WoE table, from the train-fitted model."""
+    factor, offset = scale_numbers(cfg)
+    # has_constant="add": with one loan every column looks constant, and the
+    # default would then skip the intercept column without a word.
+    x = sm.add_constant(woe[cfg["model_features"]], has_constant="add")
+    tally = x.dot(model.params)  # matched by column name
+    scored = woe[[cfg["key"], cfg["target"]]].copy()
+    scored["score"] = offset - factor * tally
+    scored["pd"] = 1 / (1 + np.exp(-tally))
+    return scored
+
+
+def score_to_pd(score: float | pd.Series, cfg: dict[str, Any]) -> float | pd.Series:
+    """Turn a score back into a PD with the ladder (D-065)."""
+    scaling = cfg["scaling"]
+    steps = (score - scaling["base_score"]) / scaling["pdo"]
+    odds = scaling["base_odds"] * 2**steps
+    return 1 / (1 + odds)
 
 
 def main() -> int:
