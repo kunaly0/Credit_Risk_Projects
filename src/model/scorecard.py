@@ -95,11 +95,22 @@ def score_loans(
     model: BinaryResultsWrapper, woe: pd.DataFrame, cfg: dict[str, Any]
 ) -> pd.DataFrame:
     """Score and PD for every loan in a WoE table, from the train-fitted model."""
+    return score_with_params(model.params, woe, cfg)
+
+
+def score_with_params(
+    params: pd.Series, woe: pd.DataFrame, cfg: dict[str, Any]
+) -> pd.DataFrame:
+    """Score and PD from an intercept and coefficients - fitted now or frozen.
+
+    The one place the scoring sum is written, so a refit and the frozen
+    model (D-066) can never score with two different formulas.
+    """
     factor, offset = scale_numbers(cfg)
     # has_constant="add": with one loan every column looks constant, and the
     # default would then skip the intercept column without a word.
     x = sm.add_constant(woe[cfg["model_features"]], has_constant="add")
-    tally = x.dot(model.params)  # matched by column name
+    tally = x.dot(params)  # matched by column name
     scored = woe[[cfg["key"], cfg["target"]]].copy()
     scored["score"] = offset - factor * tally
     scored["pd"] = 1 / (1 + np.exp(-tally))

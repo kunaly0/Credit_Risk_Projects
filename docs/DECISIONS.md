@@ -1858,3 +1858,35 @@ Rejected  600 at 30:1 (PDO 20) and 660 at 72:1 (PDO 40). Same ranking
 
 Cost      None to the model. The scale changes how scores look, not
           which loans rank riskier or their PD.
+
+### D-066 | 2026-11-22 | Freeze the PD scorecard as pd_scorecard_v1
+
+Context   No fitted model is saved: every run refits the fill values,
+          binners and coefficients on train. The refit gives the same
+          answer today (S11 notebook rerun on 22 Nov matched), but a
+          package update, a database reload or a config edit would
+          change the model without any error. Test and 2017 are scored
+          once in S12, and calibration, PSI monitoring and the API must
+          all use the same model that was measured.
+
+Decision  Fit once on train and save it as models/pd_scorecard_v1.pkl:
+          train fill values, the 9 binners, intercept and 8
+          coefficients, and the scaling numbers. Coefficients are saved
+          as plain numbers, not the statsmodels result, which carries
+          the train rows. A metadata file records fit date, git commit,
+          train loans and defaults, and package versions. Test, 2017 and
+          every later step score only from this file. Two tests guard
+          it: F05Q10000006 scores 518.59, and frozen scores equal refit
+          scores on every validation loan. Any refit is a new version
+          with its own entry.
+
+Rejected  Refit on every run - the model could change silently, and an
+          API cannot refit 131,366 loans for each request. A readable
+          text model (bin edges, WoE, coefficients) with its own scorer -
+          a second scorer that must match optbinning on every loan;
+          possible later.
+
+Cost      The file loads only with the pinned package versions (pandas,
+          optbinning, scikit-learn, statsmodels). A pickle file can run
+          code when opened, so only files built by this project are
+          loaded.
