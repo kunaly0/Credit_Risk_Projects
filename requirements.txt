@@ -12,3 +12,4 @@ optbinning==1.0.0
 scikit-learn==1.9.0
 statsmodels==0.15.0
 wrapt==2.5.2  # pulled in by statsmodels; pinned so pip never picks a dev build
+pyarrow==25.0.1  # pandas stores text with it; the frozen model needs it (D-066)
