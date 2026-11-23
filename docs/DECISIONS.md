@@ -1890,3 +1890,11 @@ Cost      The file loads only with the pinned package versions (pandas,
           optbinning, scikit-learn, statsmodels). A pickle file can run
           code when opened, so only files built by this project are
           loaded.
+
+Update    2026-11-22: CI failed because pandas on the local PC stores
+          text such as CA, TX or R with a helper package, pyarrow, and
+          the property_state and channel bins were saved in that form.
+          pyarrow was installed locally (it came with Streamlit) but was
+          not in requirements.txt, and GitHub installs only what
+          requirements.txt lists. Fixed by pinning pyarrow 25.0.1 in
+          requirements.txt.
