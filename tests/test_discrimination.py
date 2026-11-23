@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 from src.model import freeze
 from src.model.discrimination import band_edges, band_table, measure
-from src.model.prepare import get_engine, load_set
+from src.model.prepare import get_engine, load_config, load_final_set, load_set
 
 load_dotenv()
 needs_db = pytest.mark.skipif(
@@ -46,6 +46,11 @@ def test_perfect_and_upside_down() -> None:
 def test_needs_both_defaults_and_goods() -> None:
     with pytest.raises(ValueError, match="needs defaults and goods"):
         measure(scored([500, 600], [0, 0]), "no defaults")
+
+
+def test_sealed_view_gives_only_test_and_oot() -> None:
+    with pytest.raises(ValueError, match="only"):
+        load_final_set(None, "train", load_config())  # stops before any database call
 
 
 @needs_db

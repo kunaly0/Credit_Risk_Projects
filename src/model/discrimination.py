@@ -4,6 +4,10 @@ A lower score means riskier, so the model works when defaults score low.
 KS and AUC are worked out loan by loan, not from 10 bands, so they come out
 a little higher than the hand-worked band versions.
 
+Train and validation come from pd_features_build; test and 2017 (oot) from
+the sealed pd_features_final, read only to grade the frozen model. Results go
+to docs/s12_discrimination.csv and docs/s12_band_tables.csv.
+
 Run from the repo root:  python -m src.model.discrimination
 """
 
@@ -11,15 +15,18 @@ from __future__ import annotations
 
 import logging
 import sys
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score, roc_curve
 
 from src.model import freeze
-from src.model.prepare import get_engine, load_set
+from src.model.prepare import REPO_ROOT, get_engine, load_final_set, load_set
 
 TARGET = "target"
+RESULTS_CSV = REPO_ROOT / "docs" / "s12_discrimination.csv"
+BANDS_CSV = REPO_ROOT / "docs" / "s12_band_tables.csv"
 N_BANDS = 10
 
 log = logging.getLogger(__name__)
@@ -69,30 +76,37 @@ def band_table(scored: pd.DataFrame, edges: np.ndarray) -> pd.DataFrame:
     return table
 
 
+def score_all(model: dict[str, Any]) -> dict[str, pd.DataFrame]:
+    """Score all four sets from the frozen model - the same pieces for every set."""
+    engine = get_engine()
+    cfg = model["config"]
+    raw = {name: load_set(engine, name, cfg) for name in ("train", "validation")}
+    raw |= {name: load_final_set(engine, name, cfg) for name in ("test", "oot")}
+    return {name: freeze.score_set(model, df, name) for name, df in raw.items()}
+
+
 def main() -> int:
-    """Score train and validation from the frozen model and print the results."""
+    """Grade the frozen model on all four sets, save and print the results."""
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s"
     )
     try:
-        model = freeze.load_model()
-        engine = get_engine()
-        scored = {
-            sample_set: freeze.score_set(
-                model, load_set(engine, sample_set, model["config"]), sample_set
-            )
-            for sample_set in ("train", "validation")
-        }
+        scored = score_all(freeze.load_model())
         results = pd.DataFrame([measure(s, name) for name, s in scored.items()])
-        edges = band_edges(scored["train"]["score"])
-        tables = {name: band_table(s, edges) for name, s in scored.items()}
+        edges = band_edges(scored["train"]["score"])  # band edges set on train only
+        tables = pd.concat(
+            {name: band_table(s, edges) for name, s in scored.items()}, names=["set"]
+        )
+        results.to_csv(RESULTS_CSV, index=False)
+        tables.reset_index().astype({"score": str}).to_csv(BANDS_CSV, index=False)
     except Exception:
         log.exception("discrimination failed")
         return 1
     print(results.round(4).to_string(index=False))
-    for name, table in tables.items():
+    for name in ("test", "oot"):
         print(f"\n{name}")
-        print(table.round(4).to_string())
+        print(tables.loc[name].round(4).to_string())
+    log.info("saved %s and %s", RESULTS_CSV.name, BANDS_CSV.name)
     return 0
 
 

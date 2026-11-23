@@ -23,6 +23,8 @@ from sqlalchemy import URL, Engine, create_engine, text
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = REPO_ROOT / "config" / "model_config.yaml"
 SETS = ("train", "validation")  # the only sets in pd_features_build
+FINAL_VIEW = "pd_features_final"  # test and 2017, sealed until S12 (D-056)
+FINAL_SETS = ("test", "oot")
 
 log = logging.getLogger(__name__)
 
@@ -55,18 +57,39 @@ def get_engine() -> Engine:
     return create_engine(url)
 
 
-def load_set(engine: Engine, sample_set: str, cfg: dict[str, Any]) -> pd.DataFrame:
-    """Read one set: key, target and the 9 features, always in the same order."""
-    if sample_set not in SETS:
-        raise ValueError(f"{sample_set!r} is not readable here - only {SETS}")
+def read_view(
+    engine: Engine, view: str, sample_set: str, cfg: dict[str, Any]
+) -> pd.DataFrame:
+    """Key, target and the 9 features of one set, always in the same order."""
     features = list(cfg["features"])  # the dict's keys are the 9 feature names
     columns = ", ".join([cfg["key"], cfg["target"], *features])
     query = text(
-        f"SELECT {columns} FROM {cfg['source_view']} "
+        f"SELECT {columns} FROM {view} "
         f"WHERE sample_set = :sample_set ORDER BY {cfg['key']}"
     )
-    df = pd.read_sql(query, engine, params={"sample_set": sample_set})
+    return pd.read_sql(query, engine, params={"sample_set": sample_set})
+
+
+def load_set(engine: Engine, sample_set: str, cfg: dict[str, Any]) -> pd.DataFrame:
+    """Read train or validation - the only sets used to fit or choose anything."""
+    if sample_set not in SETS:
+        raise ValueError(f"{sample_set!r} is not readable here - only {SETS}")
+    df = read_view(engine, cfg["source_view"], sample_set, cfg)
     log.info("%s: %d loans read", sample_set, len(df))
+    return df
+
+
+def load_final_set(
+    engine: Engine, sample_set: str, cfg: dict[str, Any]
+) -> pd.DataFrame:
+    """Read test or 2017 (oot) from the sealed view, only to grade the frozen model.
+
+    Nothing read here may be used to fit or choose anything (D-056, D-066).
+    """
+    if sample_set not in FINAL_SETS:
+        raise ValueError(f"{sample_set!r} is not in {FINAL_VIEW} - only {FINAL_SETS}")
+    df = read_view(engine, FINAL_VIEW, sample_set, cfg)
+    log.warning("%s: %d loans read from the sealed view", sample_set, len(df))
     return df
 
 
