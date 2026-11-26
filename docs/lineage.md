@@ -53,6 +53,9 @@ with `--root C:\Backup\Datasets`.
 | pd_features_build, pd_features_final | pd_sample_split, pd_target, dim_loan, dim_macro | sql/15, sql/16, sql/18 | Views, nothing stored. Columns limited to D-057 plus rate_spread (D-058, D-059); checked by sql/model/check_pd_sample.sql | 175,156 and 90,277 | - |
 | docs/s10_binning_tables.csv | pd_features_build, train rows only | src/model/binning.py (first written by the S10 notebook) | Blanks filled with train values (D-061), channels merged (D-062), 9 features binned (D-063). Counts only, no loan rows | 70 | Checked by tests/test_binning.py |
 | docs/s11_scorecard.csv | pd_features_build, train rows only | src/model/scorecard.py | Logistic regression on 8 WoE features (D-064), points scaled to 600 at 50:1, PDO 20 (D-065). No loan rows | 40 | Checked by tests/test_scorecard.py |
+| models/pd_scorecard_v1.pkl and .json | pd_features_build, train rows only | src/model/freeze.py | Saved once from commit 6a6ab3e (D-066): train fill values, the 9 binners, intercept and 8 coefficients, scaling, a copy of the config. The .json card holds train loans and defaults, package versions and the commit. No loan rows | - | Checked by tests/test_freeze.py |
+| docs/s12_discrimination.csv | pd_features_build (train, validation) and pd_features_final (test, oot) | src/model/discrimination.py | Every set scored by the frozen model; KS, AUC and Gini per set. No loan rows | 4 | Maths checked by tests/test_discrimination.py |
+| docs/s12_band_tables.csv | As s12_discrimination.csv | src/model/discrimination.py | Loans and defaults per score band, 10 bands with edges set on train | 40 | Train bands checked against S11 by tests/test_discrimination.py |
 
 Joins: fact_loan_performance to dim_loan on loan_sequence_number, and both
 to dim_vintage on vintage_code, are foreign keys. Loan month to dim_macro,

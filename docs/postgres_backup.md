@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | What | Full dump of `credit_risk`, custom format (`pg_dump -Fc`) |
-| Where | `D:\Backups\credit_risk\credit_risk_<yyyyMMdd_HHmmss>.dump` - a different physical disk from the database, which is on C: (D-047) |
+| Where | `D:\Backups\credit_risk\credit_risk_<yyyyMMdd_HHmmss>.dump` - a different physical disk from the database, which is on C: (D-047). Since 26 Nov 2026 that disk is external, over USB |
 | When | At every section close, and before any change that moves or rewrites tables |
 | Proof | Restore into a throwaway database and run `sql/ops/table_row_counts.sql` on both. Every count must match |
 | Keep | The three most recent dumps |
@@ -35,9 +35,11 @@ Without `--test` it only dumps. By hand:
 | 2026-11-05 | credit_risk_20261105_161233.dump | 310 MB | - | - | Before the HARP rebuild (D-062). scripts/backup_db.py --test. 10 of 10 tables match. Logged late, on 12 Nov |
 | 2026-11-12 | credit_risk_20261112_172345.dump | 310 MB | 1.2 min | 3.4 min | S10 close, after HARP left the model (D-062). scripts/backup_db.py --test. 10 of 10 tables match; pd_sample_split 265,433 |
 | 2026-11-20 | credit_risk_20261120_113801.dump | 310 MB | 1.1 min | 3.6 min | S11 close. scripts/backup_db.py --test. 10 of 10 tables match; pd_sample_split 265,433 |
+| 2026-11-26 | credit_risk_20261120_113801.dump | 310 MB | - | - | Real restore after the C: SSD failed on 23 Nov: new SSD, fresh PostgreSQL 18.7, `pg_restore -j 4`. 10 of 10 tables match; pytest 52 passed; S12 results reproduced exactly (no change to the S12 CSVs on rerun). The 23 Nov dump, taken just before the old SSD hung during its restore test, was never tested and was deleted |
+| 2026-11-26 | credit_risk_20261126_110421.dump | 310 MB | 1.1 min | 3.2 min | S12 close. scripts/backup_db.py --test. 10 of 10 tables match; pd_sample_split 265,433 |
 
 ## Not covered
 
-- The raw layer. It has its own second copy at `C:\Backup\Datasets\Raw` (D-047).
+- The raw layer. Its second copy at `C:\Backup\Datasets\Raw` (D-047) was lost with the old SSD on 23 Nov 2026; until it is copied again, the external disk holds the only copy.
 - `.env` and `postgresql.conf`.
 - Losing the laptop. Every copy is on one machine. load_audit, load_audit_field and dq_results record past runs and cannot be rebuilt from Raw, so they are the part an off-machine copy would protect.

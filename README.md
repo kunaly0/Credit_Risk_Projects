@@ -14,7 +14,7 @@ checked against the data rather than the document.
 | Project | Status |
 |---|---|
 | 0 - Data foundation: Freddie Mac loans and FRED macro data in PostgreSQL, with data quality rules and an audit trail | Complete, October 2026 |
-| 1 - Probability of default scorecard | In progress: target defined (S08), sample split and leakage audit (S09), feature checks, WoE binning and IV (S10), logistic regression scorecard and points scaling (S11) |
+| 1 - Probability of default scorecard | In progress: target defined (S08), sample split and leakage audit (S09), feature checks, WoE binning and IV (S10), logistic regression scorecard and points scaling (S11), discrimination on validation, test and 2017 (S12) |
 
 ## Project 0 at a glance
 
@@ -85,6 +85,7 @@ psql -h localhost -U postgres -d credit_risk -f sql/model/build_pd_target.sql
 psql -h localhost -U postgres -d credit_risk -f sql/model/build_pd_sample_split.sql
 psql -h localhost -U postgres -d credit_risk -f sql/model/check_pd_sample.sql
 python -m src.model.scorecard
+python -m src.model.discrimination
 python -m pytest
 ```
 
@@ -93,12 +94,15 @@ Then check the result: `sql/ops/table_row_counts.sql` for row counts,
 `python scripts/verify_raw_checksums.py` for the raw files. A new FRED pull
 returns the latest revised figures, so macro values can differ slightly from
 mine (D-041). `src.model.scorecard` refits the scorecard on the train rows and
-writes docs/s11_scorecard.csv. All 41 tests should pass; without the
-database, the 13 that need it are skipped.
+writes docs/s11_scorecard.csv. The scorecard used from S12 on is the frozen
+copy in models/, built once by `src.model.freeze` (D-066);
+`src.model.discrimination` scores all four sets from it and writes the S12
+results. All 52 tests should pass; without the database, the 16 that need it
+are skipped.
 
 ## How it was built
 
-The work ran in sections, S00 to S11, and commit messages start with the
+The work ran in sections, S00 to S12, and commit messages start with the
 section they belong to.
 
 | Section | What it covered |
@@ -115,12 +119,13 @@ section they belong to.
 | S09 | Project 1 sample: 2017 as the out-of-time test, which columns may be features, leakage audit (D-055 to D-057), the `pd_sample_split` table, two feature views and their checks |
 | S10 | Project 1 features: field checks and missing values, a rate spread over the matching FRED market rate, HARP refinances out of scope, WoE binning and IV fitted on train, 9 features kept (D-058 to D-063) |
 | S11 | Project 1 scorecard: preparation and binning moved into src/model and tested against S10, logistic regression on the WoE values with mortgage insurance dropped (D-064), points scaled to 600 at 50:1 odds with 20 points to double the odds (D-065), scoring code and tests |
+| S12 | Project 1 discrimination: the fitted scorecard frozen as pd_scorecard_v1 (D-066), test and 2017 read once from the sealed view, KS, AUC and Gini for each set: Gini 0.70 on validation and 0.60 on 2017 |
 
 ## Documents
 
 | Document | What it holds |
 |---|---|
-| [Decision log](docs/DECISIONS.md) | 61 decisions, including incidents and what changed because of them |
+| [Decision log](docs/DECISIONS.md) | 62 decisions, including incidents and what changed because of them |
 | [DQ rules](docs/dq_rules.md) | The 20 rules, their thresholds and results |
 | [Lineage](docs/lineage.md) | From raw file to table, and what the lineage cannot show |
 | [Governance report](docs/governance_report.md) | Controls tested, findings, open items, limitations |
@@ -131,6 +136,8 @@ section they belong to.
 | [Backup](docs/postgres_backup.md) | How the database is backed up and the restore test |
 | [Binning tables](docs/s10_binning_tables.csv) | The 9 WoE binnings fitted on train: bins, counts, WoE and IV |
 | [Scorecard](docs/s11_scorecard.csv) | Points for every bin of the 8 model features |
+| [Discrimination](docs/s12_discrimination.csv) | KS, AUC and Gini on train, validation, test and 2017 |
+| [Score bands](docs/s12_band_tables.csv) | Loans and defaults per score band for each set, bands set on train |
 
 ## Repository layout
 
@@ -138,6 +145,7 @@ section they belong to.
 config/       loader, FRED and model settings
 dashboards/   Power BI file
 docs/         the documents above, data dictionaries, provenance checksums
+models/       the frozen scorecard pd_scorecard_v1 and its card
 notebooks/    S10 feature analysis and S11 scorecard
 scripts/      sample loader, checksum verification, database backup
 sql/          numbered build files 01-19, plus dq/ (rule queries), ops/ (build, counts)
@@ -146,10 +154,10 @@ src/          etl/ (loader), macro/ (FRED), dq/ (DQ suite), model/ (Project 1 sc
 tests/        unit tests, run on every push; those needing the database skip there
 ```
 
-Built with PostgreSQL 18, Python 3.13 (psycopg 3, pandas, optbinning, statsmodels), Power BI Desktop and
+Built with PostgreSQL 18, Python 3.13 (psycopg 3, pandas, optbinning, statsmodels, scikit-learn), Power BI Desktop and
 GitHub Actions.
 
-The schema in sql/01-12, the data quality SQL and the decisions in the log are my own work. The larger Python scripts (the FRED loader, the checksum, sample-load and backup scripts, the tests) and the Project 1 target, sample split and feature view SQL (sql/13-15, sql/model) and the Project 1 scorecard code in src/model were written with AI assistance from my decisions and reviewed by me.
+The schema in sql/01-12, the data quality SQL and the decisions in the log are my own work; the wording of D-066 was drafted with AI assistance. The larger Python scripts (the FRED loader, the checksum, sample-load and backup scripts, the tests) and the Project 1 target, sample split and feature view SQL (sql/13-15, sql/model) and the Project 1 scorecard code in src/model were written with AI assistance from my decisions and reviewed by me.
 
 ## Licence
 

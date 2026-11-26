@@ -139,14 +139,17 @@ with a date, never written over it (D-005, D-039, D-041, D-047).
 - State and national house price indices are different measures and cannot
   be compared directly (D-046).
 
-## Project 1 controls so far (S08 to S11)
+## Project 1 controls so far (S08 to S12)
 
 | Control | How it was tested | Result |
 |---|---|---|
 | Sample checks | sql/model/check_pd_sample.sql after every rebuild of pd_target and pd_sample_split | 10 of 10 at S10 close |
-| Fit on train only | Fill values, bins and the model are learned from train rows; validation is only compared. src/model reads pd_features_build only, which holds no test or 2017 loans | Test and 2017 not read before S12 |
+| Fit on train only | Fill values, bins and the model are learned from train rows; validation is only compared. load_set reads train and validation only; load_final_set reads test and 2017 from pd_features_final, logs a warning, and is used only to grade the frozen model | Test and 2017 read once in S12; no fill, bin, weight or choice came from them |
 | Model code reproduces S10 | tests/test_binning.py against docs/s10_binning_tables.csv: fill values, bins, loans and defaults per bin, IV | 11 of 11 pass |
 | Coefficient signs | Every WoE coefficient must be negative | 8 of 8 after mortgage insurance was dropped (D-064) |
 | Hand-scored loan | One train loan scored from docs/s11_scorecard.csv in Excel on 18 Nov, kept as a test in tests/test_scorecard.py | 518.59 points, PD 25.15%, same as the code |
 | Score and PD agree | tests/test_scorecard.py: the score-to-PD ladder, and every train loan's PD against statsmodels | Pass |
-| Stop rules in src/model | A credit score outside 300-850, a blank left after filling, or a category train never saw stops the run | Run on made-up data while the code was written; real data has not triggered them |
+| Stop rules in src/model | A credit score outside 300-850, a blank left after filling, or a category train never saw stops the run | Run on made-up data while the code was written; train, validation, test and 2017 have not triggered them |
+| Frozen model | models/pd_scorecard_v1 (D-066), saved once from a committed state. tests/test_freeze.py: the card matches S11, loading checks package versions, frozen scores equal a refit on every validation loan, the hand-scored loan | 6 of 6 pass. CI found a missing package (pyarrow) the day the model was saved; now pinned |
+| Recovery after disk failure | The C: SSD failed on 23 Nov 2026. New SSD, fresh install, database restored from the 20 Nov dump, repo cloned from GitHub, environment rebuilt from requirements.txt | 10 of 10 tables match; 52 of 52 tests pass; S12 results reproduced exactly |
+| Discrimination | KS, AUC and Gini per set from the frozen model. Maths checked on hand-worked examples; train bands match S11; 2017 KS and AUC rebuilt in Excel from the band table | Gini 0.69 train, 0.70 validation, 0.68 test, 0.60 on 2017. Excel (10 bands): KS 46.8%, AUC 0.791, against the code's 47.4% and 0.798 |
