@@ -40,6 +40,6 @@ Without `--test` it only dumps. By hand:
 
 ## Not covered
 
-- The raw layer. Its second copy at `C:\Backup\Datasets\Raw` (D-047) was lost with the old SSD on 23 Nov 2026; until it is copied again, the external disk holds the only copy.
+- The raw layer. Its second copy at `C:\Backup\Datasets\Raw` (D-047) was lost with the old SSD on 23 Nov 2026 and copied again on 26 Nov; `scripts/verify_raw_checksums.py` passed on both copies, 335 of 335 files.
 - `.env` and `postgresql.conf`.
 - Losing the laptop. Every copy is on one machine. load_audit, load_audit_field and dq_results record past runs and cannot be rebuilt from Raw, so they are the part an off-machine copy would protect.
